@@ -290,7 +290,13 @@ function handleViews(req, res) {
 /* ================= 后台管理（自建轻量，零依赖） ================= */
 const crypto = require('crypto');
 const STORE_FILE = path.join(DATA_DIR, 'store.json');
-const ADMIN_PASS = process.env.ADMIN_PASS || 'opc-admin-dev';
+const ADMIN_PASS_FILE = path.join(DATA_DIR, 'admin-pass.txt');
+/* 密码优先级：data/admin-pass.txt 文件 > ADMIN_PASS 环境变量 > 默认值 */
+function loadAdminPass() {
+  try { if (fs.existsSync(ADMIN_PASS_FILE)) { const p = fs.readFileSync(ADMIN_PASS_FILE, 'utf8').trim(); if (p) return p; } } catch(e) {}
+  return process.env.ADMIN_PASS || 'opc-admin-dev';
+}
+let ADMIN_PASS = loadAdminPass();
 const adminTokens = new Set();
 /* 支付页默认配置：收款码（data URL）、提示语、客服微信。后台可配，前端展示。 */
 const PAY_DEFAULT = { enabled: false, wechatQR: '', alipayQR: '', note: '付款后添加客服微信，手动开通会员权限', csWechat: '' };
@@ -604,6 +610,23 @@ async function handleAdminOrderStatus(req, res) {
   return sendJSON(res, 200, { ok: true, order: o });
 }
 
+async function handleAdminSetPassword(req, res) {
+  const b = await readBody(req);
+  const newPass = String(b.password || '').trim();
+  if (!newPass || newPass.length < 4) return sendJSON(res, 400, { error: '密码至少 4 位' });
+  if (newPass.length > 64) return sendJSON(res, 400, { error: '密码不超过 64 位' });
+  try {
+    ensureDataDir();
+    fs.writeFileSync(ADMIN_PASS_FILE, newPass, 'utf8');
+    ADMIN_PASS = newPass;
+    /* 使所有旧 token 失效（强制重新登录） */
+    adminTokens.clear();
+    return sendJSON(res, 200, { ok: true, message: '密码已更新，所有会话已失效，请用新密码重新登录' });
+  } catch (e) {
+    return sendJSON(res, 500, { error: '写入失败: ' + e.message });
+  }
+}
+
 /* ---------------- 静态托管（防目录穿越） ---------------- */
 const MIME = {
   '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
@@ -681,6 +704,7 @@ const server = http.createServer(async (req, res) => {
       if (u === '/api/admin/orders' && req.method === 'GET') return handleAdminOrders(req, res);
       if (u === '/api/admin/set-membership' && req.method === 'POST') return await handleAdminSetMembership(req, res);
       if (u === '/api/admin/order-status' && req.method === 'POST') return await handleAdminOrderStatus(req, res);
+      if (u === '/api/admin/set-password' && req.method === 'POST') return await handleAdminSetPassword(req, res);
       return sendJSON(res, 404, { error: 'not found' });
     }
     if (u.startsWith('/api/')) return sendJSON(res, 404, { error: 'not found' });

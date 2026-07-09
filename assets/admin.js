@@ -95,6 +95,7 @@
       if (t === 'ops') loadOps();
       if (t === 'orders') loadOrders();
       if (t === 'pay') loadPay();
+      if (t === 'security') { /* 密码修改面板无预加载数据 */ }
     }));
   }
 
@@ -431,6 +432,22 @@
     const r = await api('/api/admin/order-status', { method: 'POST', body: JSON.stringify({ id, status }) });
     if (r.ok) { toast('订单状态已更新'); loadOrders(); } else toast('操作失败');
   }
+  async function savePassword() {
+    const np = $('#sec-new-pass').value.trim();
+    const cp = $('#sec-confirm-pass').value.trim();
+    const msg = $('#sec-msg');
+    if (!np || np.length < 4) { msg.textContent = '⚠️ 密码至少 4 位'; msg.style.color = '#ff8585'; return; }
+    if (np !== cp) { msg.textContent = '⚠️ 两次输入的密码不一致'; msg.style.color = '#ff8585'; return; }
+    const r = await api('/api/admin/set-password', { method: 'POST', body: JSON.stringify({ password: np }) });
+    if (r.ok) {
+      msg.textContent = '✅ ' + (r.message || '密码已更新，请重新登录');
+      msg.style.color = '#6ee7b7';
+      setTimeout(() => { clearToken(); showLogin(); }, 2000);
+    } else {
+      msg.textContent = '❌ ' + (r.error || '修改失败');
+      msg.style.color = '#ff8585';
+    }
+  }
 
   /* ---------- 工具 ---------- */
   function num(el) { const v = parseFloat(el.value); return isNaN(v) ? undefined : v; }
@@ -450,6 +467,7 @@
     $('#bn-reset').addEventListener('click', resetBannerForm);
     $('#ops-save').addEventListener('click', saveOps);
     $('#pay-save').addEventListener('click', savePay);
+    $('#sec-save-pass').addEventListener('click', savePassword);
     bindPayUploads();
     bindTabs();
   }

@@ -103,6 +103,7 @@
         <button class="admin-tab" data-tab="ops">运营配置</button>
         <button class="admin-tab" data-tab="orders">订单管理</button>
         <button class="admin-tab" data-tab="pay">支付配置</button>
+        <button class="admin-tab" data-tab="security">安全设置</button>
       </div>
 
       <!-- 概览 -->
@@ -263,6 +264,19 @@
             <input type="text" id="pay-cs" class="input" placeholder="例如 opc-service" /></div>
         </div>
         <button class="btn btn-primary" id="pay-save" style="margin-top:14px">保存支付配置</button>
+      </section>
+
+      <!-- 安全设置 -->
+      <section class="panel" id="tab-security">
+        <p class="muted" style="color:var(--muted);font-size:13px;margin:0 0 14px">修改后台管理员密码。修改后所有已登录会话立即失效，需用新密码重新登录。</p>
+        <div class="form-grid">
+          <div class="full"><label>新密码（4-64 位）</label>
+            <input type="password" id="sec-new-pass" class="input" placeholder="输入新密码" /></div>
+          <div class="full"><label>确认新密码</label>
+            <input type="password" id="sec-confirm-pass" class="input" placeholder="再次输入新密码" /></div>
+        </div>
+        <button class="btn btn-primary" id="sec-save-pass" style="margin-top:14px">修改密码</button>
+        <p id="sec-msg" style="margin:10px 0 0;font-size:13px"></p>
       </section>
     </div>
   </div>
