@@ -1,0 +1,14 @@
+{
+  "name": "opc-saas",
+  "version": "1.0.0",
+  "description": "OPC 一人公司赛道选型 SaaS —— 零依赖 Node 服务 + 静态前端（含后台管理与支付页配置）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true
+}

@@ -1,0 +1,24 @@
+# Render Blueprint —— 一键部署后端（含静态前端 + 后台 + 支付配置）
+# 用法：Render 控制台 → New → Blueprint → 选择本仓库 → 自动按此文件创建 Web Service。
+services:
+  - type: web
+    name: opc-saas
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    healthCheckPath: "/"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_PASS
+        sync: false          # 部署后在 Render 环境变量里改成你的强密码
+      - key: HUNYUAN_API_KEY
+        sync: false          # 选填：腾讯混元 Key，不填则 AI 顾问走降级
+      - key: DATA_DIR
+        value: /data         # 配合下方 Disk 做数据持久化
+    disk:
+      name: opc-data
+      mountPath: /data
+      sizeGB: 1

@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#070A12" />
+  <!-- 后端基地址：默认同源（server.js 托管时无需改）。若前端静态托管在别处而 server.js 单独部署，请填入后端域名，例如 https://opc-backend.up.railway.app -->
+  <meta name="api-base" content="" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="OPC赛道选型" />
+  <title>OPC 一人公司赛道选型 · AI 增强双模式 SaaS</title>
+  <meta name="description" content="面向单人创业者与副业群体的轻量化工具型 SaaS：对话框 AI 顾问 1 分钟测赛道，或问卷式精准测评，匹配最适合你的轻资产方向。" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-top">
+      <a class="brand" href="#" id="nav-start">
+        <span class="brand-mark">OPC</span>
+        <span class="brand-text">一人公司赛道选型</span>
+      </a>
+      <div class="nav-account" id="nav-account"></div>
+    </div>
+    <div class="nav-inner">
+      <nav class="module-nav" aria-label="主导航">
+        <button class="mnav-item" type="button" data-go="home"><span class="ico" data-icon="home" data-size="18"></span><span class="mnav-label">首页</span></button>
+        <button class="mnav-item" type="button" data-go="assess"><span class="ico" data-icon="target" data-size="18"></span><span class="mnav-label">智能测评</span></button>
+        <button class="mnav-item" type="button" data-go="daily"><span class="ico" data-icon="trending-up" data-size="18"></span><span class="mnav-label">每日商机咨询</span></button>
+        <button class="mnav-item" type="button" data-go="cases"><span class="ico" data-icon="book-open" data-size="18"></span><span class="mnav-label">OPC真实案例</span></button>
+        <button class="mnav-item mnav-member" type="button" data-go="member"><span class="ico" data-icon="crown" data-size="18"></span><span class="mnav-label" id="mnav-member-label">开通会员</span></button>
+      </nav>
+    </div>
+    <div class="stepper" id="stepper" aria-label="流程进度"></div>
+  </header>
+
+  <main>
+    <!-- ============ 首页 ============ -->
+    <section class="view is-active" id="view-home">
+      <div class="hero">
+        <div class="hero-bg" aria-hidden="true"></div>
+        <div class="hero-inner">
+          <span class="pill"><span class="ico" data-icon="rocket" data-size="15"></span> 2026 · AI 增强 · 双模式版</span>
+          <h1>选对<span class="hl-big">赛道</span> <em>马上<span class="hl-big">暴富</span></em></h1>
+          <div class="hero-cta">
+            <button class="btn btn-primary btn-lg" id="hero-start">免费开始测评 →</button>
+            <span class="hero-note">2026 年单人创始人已占新注册企业 36.3%</span>
+          </div>
+          <div class="hero-stats">
+            <div><b>多</b><span>个 AI 赋能精选赛道</span></div>
+            <div><b>8000亿</b><span>一人公司市场规模</span></div>
+            <div><b>5-10倍</b><span>AI 提效单人产能</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 运营 banner 轮播（后台可配） -->
+      <div class="home-banner" id="home-banner" aria-label="运营横幅"></div>
+
+      <!-- 双模式选择 -->
+      <div class="section" id="section-modes">
+        <h2 class="section-title">两种测评方式，总有一种适合你</h2>
+        <p class="section-sub">公域引流用对话、站内转化用问卷，结果页互通导流</p>
+        <p class="mode-limit-note">🎁 免费版可体验 1 次完整测评 · 开通会员后畅测全部赛道</p>
+        <div class="mode-grid">
+          <div class="mode-card mode-chat">
+            <div class="mode-ico" data-icon="message" data-size="30"></div>
+            <h3>对话框式 AI 顾问</h3>
+            <p class="mode-tag">引流拉新 · 低门槛 · 高共情</p>
+            <p>像和专属创业顾问聊天，3 个问题、1 分钟出结果。适合朋友圈、社群、短视频场景快速体验。</p>
+            <ul class="mode-points">
+              <li>自由输入你的情况，混元大模型实时理解并匹配</li>
+              <li>口语化输出：匹配结论 + 落地三件套 + 避坑红线</li>
+              <li>库里没有的赛道，AI 也能即时生成调研卡</li>
+            </ul>
+            <button class="btn btn-primary" id="mode-chat">开始 AI 对话测评 →</button>
+          </div>
+          <div class="mode-card mode-quiz">
+            <div class="mode-ico" data-icon="clipboard" data-size="30"></div>
+            <h3>问卷式精准测评</h3>
+            <p class="mode-tag">付费转化 · 高精准 · 结构化</p>
+            <p>分两阶答题，简版结果即时看，补充信息解锁完整启动报告。承载会员权益的核心载体。</p>
+            <ul class="mode-points">
+              <li>第一阶快速测评 6 题（90 秒出简版）</li>
+              <li>第二阶精准升级 6 题（解锁完整报告）</li>
+              <li>结构化数据持续优化匹配算法</li>
+            </ul>
+            <button class="btn btn-primary" id="mode-quiz">开始问卷测评 →</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section section-alt">
+        <h2 class="section-title">四大核心能力</h2>
+        <div class="module-grid" id="module-grid"></div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">会员版本与权益</h2>
+        <p class="section-sub">从免费体验到专业落地，按需选择</p>
+        <div class="plan-grid" id="plan-grid-home"></div>
+        <div class="home-cta">
+          <button class="btn btn-primary btn-lg" id="start-quiz">开始我的赛道匹配 →</button>
+        </div>
+      </div>
+
+      <div class="section section-alt">
+        <h2 class="section-title">每日赛道商机 & 痛点雷达</h2>
+        <p class="section-sub">追踪多个赛道当天的市场机会与落地卡点，帮你选对方向、避开坑</p>
+        <div class="daily-board" id="daily-board-home"></div>
+        <div class="home-cta">
+          <button class="btn btn-primary" id="home-daily">查看完整每日看板 →</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">OPC 真实创业案例</h2>
+        <p class="section-sub">真实创业案例，给伙伴们新启发</p>
+        <div class="case-board" id="case-board-home"></div>
+        <div class="home-cta">
+          <button class="btn btn-primary" id="home-cases">查看全部真实案例 →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 对话框式 AI 顾问 ============ -->
+    <section class="view" id="view-chat">
+      <div class="container narrow">
+        <button class="btn btn-ghost btn-sm quiz-exit" id="chat-back">← 返回首页</button>
+        <div class="chat-shell">
+          <div class="chat-head">
+            <div class="chat-ava" data-icon="cpu" data-size="22"></div>
+            <div><b>OPC 创业选型顾问</b><span id="chat-status" class="chat-status off">检测中…</span></div>
+            <button class="chat-gear" id="chat-gear" title="配置混元大模型" aria-label="配置混元大模型"><span class="ico" data-icon="settings" data-size="18"></span></button>
+          </div>
+          <div class="chat-log" id="chat-log"></div>
+          <div class="chat-composer">
+            <div class="chat-suggest" id="chat-suggest"></div>
+            <div class="chat-input-row">
+              <textarea id="chat-input" rows="1" placeholder="用一段话描述你的情况，例如：我是宝妈，每天2小时，零成本，会写文案…"></textarea>
+              <button class="btn btn-primary" id="chat-send">发送</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 问卷式 ============ -->
+    <section class="view" id="view-quiz">
+      <div class="container narrow">
+        <div class="quiz-shell">
+          <div class="view-actions">
+            <button class="btn btn-ghost btn-sm quiz-exit" id="nav-start3"><span class="ico" data-icon="x" data-size="14"></span> 退出测评</button>
+            <button class="btn btn-ghost btn-sm quiz-exit" id="quiz-home"><span class="ico" data-icon="home" data-size="14"></span> 返回首页</button>
+          </div>
+          <div id="quiz-card"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 匹配结果 ============ -->
+    <section class="view" id="view-result">
+      <div class="container">
+        <button class="btn btn-ghost btn-sm detail-back" id="result-home"><span class="ico" data-icon="home" data-size="14"></span> 返回首页</button>
+        <div class="result-intro" id="result-intro"></div>
+        <div class="result-list" id="result-list"></div>
+        <div class="result-foot-actions">
+          <button class="btn btn-ghost" id="result-restart">↺ 重新测评</button>
+          <button class="btn btn-primary" id="go-tools">使用落地工具 / 经营助手 →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 赛道详情 ============ -->
+    <section class="view" id="view-detail">
+      <div class="container">
+        <div class="view-actions">
+          <button class="btn btn-ghost btn-sm detail-back" id="detail-back">← 返回匹配结果</button>
+          <button class="btn btn-ghost btn-sm detail-back" id="detail-home"><span class="ico" data-icon="home" data-size="14"></span> 返回首页</button>
+        </div>
+        <div id="detail-body"></div>
+      </div>
+    </section>
+
+    <!-- ============ 落地工具 ============ -->
+    <section class="view" id="view-tools">
+      <div class="container">
+        <div class="view-actions">
+          <button class="btn btn-ghost btn-sm detail-back" id="tools-back">← 返回赛道详情</button>
+          <button class="btn btn-ghost btn-sm detail-back" id="tools-home"><span class="ico" data-icon="home" data-size="14"></span> 返回首页</button>
+        </div>
+        <h2 class="section-title">落地工具箱 & 经营助手</h2>
+        <div id="tools-body"></div>
+      </div>
+    </section>
+
+    <!-- ============ 每日商机 & 痛点 ============ -->
+    <section class="view" id="view-daily">
+      <div class="container">
+        <button class="btn btn-ghost btn-sm detail-back" id="daily-back"><span class="ico" data-icon="home" data-size="14"></span> 返回首页</button>
+        <div class="daily-head">
+          <h2 class="section-title">每日赛道商机 & 痛点雷达</h2>
+          <p class="section-sub" id="daily-date"></p>
+          <button class="btn btn-ghost btn-sm" id="daily-refresh"><span class="ico" data-icon="refresh-cw" data-size="16"></span> 用 AI 刷新今日商机</button>
+        </div>
+        <div class="daily-board" id="daily-board"></div>
+      </div>
+    </section>
+
+    <!-- ============ OPC 真实案例 ============ -->
+    <section class="view" id="view-cases">
+      <div class="container">
+        <button class="btn btn-ghost btn-sm detail-back" id="cases-home"><span class="ico" data-icon="home" data-size="14"></span> 返回首页</button>
+        <div class="cases-head">
+          <div>
+            <h2 class="section-title">OPC 真实创业案例库</h2>
+            <p class="section-sub">真实创业案例，给伙伴们新启发</p>
+          </div>
+          <button class="btn btn-primary btn-sm" id="cases-shuffle"><span class="ico" data-icon="refresh-cw" data-size="16"></span> 换一批</button>
+        </div>
+        <div class="case-filters" id="case-filters"></div>
+        <div class="case-board" id="case-board"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>OPC 一人公司赛道选型与落地 SaaS · 演示原型（AI增强·双模式版）· 收益均为参考区间，因人而异，不承诺收益</p>
+    <p class="view-line">
+      👁 已被浏览 <span id="busuanzi_value_site_pv">0</span> 次
+      · 独立访客 <span id="busuanzi_value_site_uv">0</span> 人
+      · <span id="backend-status" class="backend-status is-check">后端：检测中…</span>
+    </p>
+    <p class="foot-admin"><a href="admin.html" class="foot-link" rel="nofollow">管理后台</a></p>
+  </footer>
+
+  <!-- ============ H5 底部 TabBar（移动端显示） ============ -->
+  <nav class="tabbar" aria-label="底部导航">
+    <button class="tabbar-item" type="button" data-go="home"><span class="ico" data-icon="home" data-size="23"></span><span class="tabbar-label">首页</span></button>
+    <button class="tabbar-item" type="button" data-go="assess"><span class="ico" data-icon="target" data-size="23"></span><span class="tabbar-label">测评</span></button>
+    <button class="tabbar-item" type="button" data-go="daily"><span class="ico" data-icon="trending-up" data-size="23"></span><span class="tabbar-label">商机</span></button>
+    <button class="tabbar-item" type="button" data-go="cases"><span class="ico" data-icon="book-open" data-size="23"></span><span class="tabbar-label">案例</span></button>
+    <button class="tabbar-item tabbar-member" type="button" data-go="member"><span class="ico" data-icon="crown" data-size="23"></span><span class="tabbar-label" id="tabbar-member-label">会员</span></button>
+  </nav>
+
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  <div class="modal" id="member-modal" role="dialog" aria-modal="true" aria-label="开通会员">
+    <div class="modal-box">
+      <button class="modal-close" id="member-close" aria-label="关闭"><span class="ico" data-icon="x" data-size="18"></span></button>
+      <h2 class="modal-title">开通会员，解锁全部权益</h2>
+      <p class="modal-sub">一次付费，全年可用落地工具与经营助手</p>
+      <div class="plan-grid" id="member-grid"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="hunyuan-modal" role="dialog" aria-modal="true" aria-label="配置混元大模型">
+    <div class="modal-box">
+      <button class="modal-close" id="hunyuan-close" aria-label="关闭"><span class="ico" data-icon="x" data-size="18"></span></button>
+      <h2 class="modal-title">配置混元大模型（Hunyuan）</h2>
+      <p class="modal-sub">
+        静态部署（分享链接）无法运行后端，<b>填入你自己的 API Key 即可让对话顾问直连混元</b>，并自动回答库外赛道。<br>
+        Key 仅保存在你本地浏览器，不会上传到任何服务器。
+      </p>
+      <div class="form-fields">
+        <label>API Key（Bearer）
+          <input type="password" id="hunyuan-key" placeholder="sk-... 或你的混元密钥" autocomplete="off" />
+        </label>
+        <label>接口地址（OpenAI 兼容）
+          <input type="text" id="hunyuan-url" placeholder="https://api.hunyuan.cloud.tencent.com/v1/chat/completions" />
+        </label>
+        <label>模型名称
+          <input type="text" id="hunyuan-model" placeholder="hunyuan-turbo" />
+        </label>
+      </div>
+      <p class="hunyuan-test" id="hunyuan-test"></p>
+      <div class="cors-fix" id="cors-fix" style="display:none">
+        <p><span class="ico" data-icon="tool" data-size="15"></span> <b>浏览器跨域限制（CORS）</b> — 静态网页无法直接调用腾讯云 API。</p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:6px">在项目目录打开终端，运行以下命令即可绕过限制（Key 已自动填入）：</p>
+        <pre id="cors-cmd" class="cors-cmd"></pre>
+        <button class="btn btn-primary btn-sm" id="cors-copy"><span class="ico" data-icon="copy" data-size="15"></span> 复制命令</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="hunyuan-clear">清除配置</button>
+        <button class="btn btn-ghost" id="hunyuan-testbtn">测试连接</button>
+        <button class="btn btn-primary" id="hunyuan-save">保存并启用</button>
+      </div>
+      <p class="hunyuan-note">提示：若浏览器提示跨域（CORS）错误，说明该接口暂不允许网页直接调用，可在本地用 <code>node server.js</code> 配合服务端 Key 运行。</p>
+    </div>
+  </div>
+
+  <div class="modal" id="register-modal" role="dialog" aria-modal="true" aria-label="注册 / 登录">
+    <div class="modal-box register-box">
+      <button class="modal-close" id="register-close" aria-label="关闭"><span class="ico" data-icon="x" data-size="18"></span></button>
+      <div class="register-logo">OPC</div>
+      <h2 class="modal-title">注册即免费会员</h2>
+      <p class="modal-sub">设置昵称与密码，创建你的专属账号</p>
+      <div class="form-fields">
+        <label>昵称
+          <input type="text" id="reg-name" placeholder="例如：小马哥" maxlength="16" autocomplete="username" />
+        </label>
+        <label>密码
+          <input type="password" id="reg-pass" placeholder="设置登录密码（6-20 位）" maxlength="20" autocomplete="new-password" />
+        </label>
+        <label>确认密码
+          <input type="password" id="reg-pass2" placeholder="再次输入密码" maxlength="20" autocomplete="new-password" />
+        </label>
+        <label class="reg-show-line"><input type="checkbox" id="reg-show" /> 显示密码</label>
+      </div>
+      <p class="register-err" id="register-err"></p>
+      <div class="modal-actions" style="justify-content:center">
+        <button class="btn btn-primary btn-lg" id="register-go" style="width:100%">注册 / 登录</button>
+      </div>
+      <p class="register-note">昵称 + 密码即你的登录凭证。账号与密码仅加密保存在本机浏览器，不会明文上传到服务器。</p>
+    </div>
+  </div>
+
+  <!-- ============ 运营弹窗（后台可配） ============ -->
+  <div class="modal" id="ops-popup-modal" role="dialog" aria-modal="true" aria-label="活动弹窗">
+    <div class="modal-box ops-popup-box">
+      <button class="modal-close" id="ops-popup-close" aria-label="关闭"><span class="ico" data-icon="x" data-size="18"></span></button>
+      <h2 class="modal-title" id="ops-popup-title"></h2>
+      <p class="modal-sub" id="ops-popup-body"></p>
+      <div class="modal-actions" style="justify-content:center">
+        <button class="btn btn-primary" id="ops-popup-btn">查看详情</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 开通会员 · 支付页（收款码，后台可配） ============ -->
+  <div class="modal" id="pay-modal" role="dialog" aria-modal="true" aria-label="开通会员支付">
+    <div class="modal-box pay-box">
+      <button class="modal-close" id="pay-close" aria-label="关闭"><span class="ico" data-icon="x" data-size="18"></span></button>
+      <h2 class="modal-title">开通「<span id="pay-plan-name"></span>」</h2>
+      <p class="modal-sub">应付金额 <b id="pay-plan-price" class="pay-amt"></b> · 一次付费，全年可用</p>
+      <div id="pay-body">
+        <div class="pay-qr-wrap" id="pay-qr"></div>
+        <p class="pay-note" id="pay-note">付款后添加客服微信，手动开通会员权限</p>
+        <p class="pay-cs" id="pay-cs" style="display:none"></p>
+        <div class="modal-actions" style="justify-content:center">
+          <button class="btn btn-primary btn-lg" id="pay-submit" style="width:100%">我已付款 · 提交开通申请</button>
+        </div>
+        <p class="pay-hint">付款后请添加客服微信并发送昵称，客服核实后将为你开通对应会员等级并发送资料包。</p>
+      </div>
+      <div id="pay-success" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

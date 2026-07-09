@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>OPC 管理后台</title>
+  <!-- 后端基地址：默认同源（server.js 托管 admin.html 时无需改）。若 admin.html 静态托管在别处而 server.js 单独部署，请填入后端域名，例如 https://opc-backend.up.railway.app -->
+  <meta name="api-base" content="" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <style>
+    .admin-wrap { max-width: 1080px; margin: 0 auto; padding: 24px 18px 60px; }
+    .admin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .admin-head h1 { font-size: 20px; margin: 0; }
+    .admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+    .admin-tab { padding: 8px 14px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); cursor: pointer; font-size: 14px; font-weight: 600; }
+    .admin-tab.active { color: #fff; border-color: var(--primary-d); background: var(--primary-soft); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+    .stat-card .num { font-size: 26px; font-weight: 800; color: var(--primary-d); }
+    .stat-card .lbl { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    table.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    table.admin-table th, table.admin-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    table.admin-table th { color: var(--muted); font-weight: 600; }
+    .row-actions button { margin-right: 6px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 18px; }
+    .form-grid .full { grid-column: 1 / -1; }
+    .form-grid label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .form-grid input, .form-grid select, .form-grid textarea { width: 100%; }
+    .login-box { max-width: 360px; margin: 12vh auto 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; }
+    .login-box h2 { margin: 0 0 6px; }
+    .login-box p { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; background: var(--primary-soft); color: var(--primary-d); }
+    .badge.lock { background: rgba(168,85,247,.18); color: var(--violet); }
+    .hidden { display: none !important; }
+    .admin-bar { display: flex; gap: 10px; align-items: center; }
+    .toast-mini { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: #11151f; color: #fff; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line); font-size: 14px; z-index: 200; opacity: 0; transition: .25s; }
+    .toast-mini.show { opacity: 1; }
+    .qr-prev { margin-top: 8px; }
+    .pay-prev-img { max-width: 140px; max-height: 140px; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 4px; }
+
+    /* ====================== 移动端 H5 适配 ====================== */
+    @media (max-width: 768px) {
+      .admin-wrap { max-width: 100%; padding: 14px 12px calc(24px + env(safe-area-inset-bottom)); }
+      .admin-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .admin-head h1 { font-size: 18px; }
+      .admin-bar { width: 100%; justify-content: space-between; }
+      /* Tab 改为横向滑动，避免挤成一团 */
+      .admin-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 6px; scrollbar-width: none; }
+      .admin-tabs::-webkit-scrollbar { display: none; }
+      .admin-tab { flex: 0 0 auto; white-space: nowrap; padding: 9px 14px; }
+      /* 表单单列 */
+      .form-grid { grid-template-columns: 1fr; }
+      /* 统计卡两列 */
+      .stat-grid { grid-template-columns: repeat(2, 1fr); }
+      /* 表格卡片化：每行变成一张卡，td 以「标签: 值」呈现 */
+      table.admin-table, table.admin-table tbody, table.admin-table tr, table.admin-table td { display: block; width: 100%; }
+      table.admin-table thead { display: none; }
+      table.admin-table tr { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 10px; padding: 6px 10px; background: var(--surface); }
+      table.admin-table td { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: none; padding: 7px 2px; text-align: right; }
+      table.admin-table td::before { content: attr(data-label); color: var(--muted); font-weight: 600; text-align: left; flex: 0 0 38%; }
+      table.admin-table td.row-actions { justify-content: flex-end; padding-top: 4px; border-top: 1px dashed var(--line); margin-top: 2px; }
+      .login-box { margin-top: 8vh; }
+      .toast-mini { bottom: calc(20px + env(safe-area-inset-bottom)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .toast-mini { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-wrap">
+    <!-- 登录 -->
+    <div id="login-view">
+      <div class="login-box">
+        <h2>OPC 管理后台</h2>
+        <p>请输入管理员密码进入</p>
+        <label class="form-label" style="font-size:12px;color:var(--muted)">管理员密码</label>
+        <input id="admin-pass" type="password" class="input" placeholder="默认 opc-admin-dev（可用 ADMIN_PASS 环境变量修改）" style="margin:6px 0 14px" />
+        <p style="color:var(--muted);font-size:12px;margin:-6px 0 14px;line-height:1.6">后台需 Node 后端支持。若 admin.html 部署在静态托管（如 CloudStudio），请在 &lt;head&gt; 添加 &lt;meta name="api-base" content="https://你的后端域名"&gt;。</p>
+        <button class="btn btn-primary" id="admin-login" style="width:100%">登 录</button>
+        <p id="login-err" style="color:#f87171;font-size:13px;margin-top:10px;min-height:18px"></p>
+      </div>
+    </div>
+
+    <!-- 仪表盘 -->
+    <div id="dash-view" class="hidden">
+      <div class="admin-head">
+        <h1>OPC 管理后台</h1>
+        <div class="admin-bar">
+          <span class="badge" id="admin-user">已登录</span>
+          <button class="btn btn-ghost btn-sm" id="admin-logout">退出</button>
+        </div>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" data-tab="overview">概览统计</button>
+        <button class="admin-tab" data-tab="tracks">赛道管理</button>
+        <button class="admin-tab" data-tab="cases">案例管理</button>
+        <button class="admin-tab" data-tab="users">用户管理</button>
+        <button class="admin-tab" data-tab="plans">会员配置</button>
+        <button class="admin-tab" data-tab="ops">运营配置</button>
+        <button class="admin-tab" data-tab="orders">订单管理</button>
+        <button class="admin-tab" data-tab="pay">支付配置</button>
+      </div>
+
+      <!-- 概览 -->
+      <section class="panel active" id="tab-overview">
+        <div class="stat-grid" id="stat-grid"></div>
+        <p class="muted" style="color:var(--muted);font-size:13px">数据来源：服务端 store.json（注册/测评事件实时入库）。浏览量为服务端累计。</p>
+      </section>
+
+      <!-- 赛道管理 -->
+      <section class="panel" id="tab-tracks">
+        <div class="form-grid" id="track-form">
+          <input type="hidden" id="tk-id" />
+          <div class="full"><b id="tk-form-title">新增赛道</b></div>
+          <div><label>名称</label><input id="tk-name" class="input" /></div>
+          <div><label>分类</label><input id="tk-cat" class="input" /></div>
+          <div><label>启动资金(元)</label><input id="tk-capital" type="number" class="input" /></div>
+          <div><label>月收益下限(元)</label><input id="tk-incomeMin" type="number" class="input" /></div>
+          <div><label>月收益上限(元)</label><input id="tk-incomeMax" type="number" class="input" /></div>
+          <div><label>风险(1-3)</label><input id="tk-risk" type="number" class="input" /></div>
+          <div><label>AI门槛(1-3)</label><input id="tk-aiReq" type="number" class="input" /></div>
+          <div class="full"><label>新手友好度</label><input id="tk-friendly" class="input" /></div>
+          <div class="full"><label>商业模式一句话</label><input id="tk-logic" class="input" /></div>
+          <div class="full"><label>核心能力要求</label><input id="tk-ability" class="input" /></div>
+          <div class="full"><label>AI 如何提效</label><input id="tk-aiPoint" class="input" /></div>
+          <div class="full" style="display:flex;gap:10px">
+            <button class="btn btn-primary" id="tk-save">保存赛道</button>
+            <button class="btn btn-ghost" id="tk-reset">清空重填</button>
+          </div>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>名称</th><th>分类</th><th>资金</th><th>月收益</th><th>操作</th></tr></thead>
+          <tbody id="track-list"></tbody>
+        </table>
+      </section>
+
+      <!-- 案例管理 -->
+      <section class="panel" id="tab-cases">
+        <div class="form-grid" id="case-form">
+          <input type="hidden" id="cs-id" />
+          <div class="full"><b id="cs-form-title">新增案例</b></div>
+          <div><label>标题</label><input id="cs-title" class="input" /></div>
+          <div><label>分类</label><input id="cs-cat" class="input" /></div>
+          <div><label>来源</label><input id="cs-source" class="input" /></div>
+          <div><label>会员层级</label>
+            <select id="cs-tier" class="input">
+              <option value="free">免费(free)</option>
+              <option value="basic">基础会员(basic)</option>
+            </select>
+          </div>
+          <div class="full"><label>背景</label><textarea id="cs-background" class="input" rows="2"></textarea></div>
+          <div class="full"><label>玩法</label><textarea id="cs-play" class="input" rows="2"></textarea></div>
+          <div class="full"><label>结果</label><textarea id="cs-result" class="input" rows="2"></textarea></div>
+          <div class="full"><label>启发</label><textarea id="cs-insight" class="input" rows="2"></textarea></div>
+          <div class="full" style="display:flex;gap:10px">
+            <button class="btn btn-primary" id="cs-save">保存案例</button>
+            <button class="btn btn-ghost" id="cs-reset">清空重填</button>
+          </div>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>ID</th><th>标题</th><th>分类</th><th>层级</th><th>来源</th><th>操作</th></tr></thead>
+          <tbody id="case-list"></tbody>
+        </table>
+      </section>
+
+      <!-- 用户管理 -->
+      <section class="panel" id="tab-users">
+        <table class="admin-table">
+          <thead><tr><th>昵称</th><th>会员</th><th>测评次数</th><th>注册时间</th><th>手动开通会员</th><th>操作</th></tr></thead>
+          <tbody id="user-list"></tbody>
+        </table>
+      </section>
+
+      <!-- 会员配置 -->
+      <section class="panel" id="tab-plans">
+        <p class="muted" style="color:var(--muted);font-size:13px;margin-bottom:12px">编辑套餐名称、价格、权益文案（前端解锁逻辑由代码控制，这里管理展示内容）。</p>
+        <div id="plan-list"></div>
+        <button class="btn btn-primary" id="plan-save" style="margin-top:12px">保存会员配置</button>
+      </section>
+
+      <!-- 运营配置 -->
+      <section class="panel" id="tab-ops">
+        <p class="muted" style="color:var(--muted);font-size:13px;margin:0 0 14px">配置首页 banner 轮播、运营弹窗与 AI 顾问话术，保存后立即生效于前端展示。</p>
+
+        <h3 style="margin:8px 0 12px">📢 首页 Banner 轮播</h3>
+        <div class="form-grid" id="bn-form">
+          <input type="hidden" id="bn-id" />
+          <div class="full"><b id="bn-form-title">新增 Banner</b></div>
+          <div><label>标题</label><input id="bn-title-i" class="input" /></div>
+          <div><label>副标题</label><input id="bn-sub-i" class="input" /></div>
+          <div><label>背景(CSS 渐变/颜色)</label><input id="bn-bg-i" class="input" value="linear-gradient(135deg,#1b2740,#0b1020)" /></div>
+          <div><label>跳转链接</label><input id="bn-link-i" class="input" placeholder="留空不跳转；可填 /#xxx 或 https://" /></div>
+          <div><label>按钮文字</label><input id="bn-text-i" class="input" placeholder="留空则不显示按钮" /></div>
+          <div><label>排序(数字)</label><input id="bn-order-i" type="number" class="input" value="0" /></div>
+          <div><label>状态</label>
+            <select id="bn-active-i" class="input"><option value="1">显示</option><option value="0">隐藏</option></select>
+          </div>
+          <div class="full" style="display:flex;gap:10px">
+            <button class="btn btn-primary" id="bn-save">保存 Banner</button>
+            <button class="btn btn-ghost" id="bn-reset">清空重填</button>
+          </div>
+        </div>
+        <div style="margin:6px 0 10px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)">整体启用 Banner 轮播
+            <input type="checkbox" id="bn-enabled" /></label>
+        </div>
+        <table class="admin-table">
+          <thead><tr><th>标题</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="bn-list"></tbody>
+        </table>
+
+        <h3 style="margin:22px 0 12px">📣 运营弹窗</h3>
+        <div class="form-grid" id="popup-form">
+          <div><label>启用弹窗</label><input type="checkbox" id="pop-enabled" /></div>
+          <div><label>触发时机</label>
+            <select id="pop-trigger" class="input"><option value="load">进入首页时</option><option value="afterRegister">注册成功后</option></select>
+          </div>
+          <div><label>仅展示一次</label><input type="checkbox" id="pop-once" checked /></div>
+          <div class="full"><label>标题</label><input id="pop-title" class="input" /></div>
+          <div class="full"><label>内容</label><textarea id="pop-content" class="input" rows="3"></textarea></div>
+          <div class="full"><label>按钮文字（留空则不显示按钮）</label><input id="pop-btnText" class="input" /></div>
+          <div class="full"><label>按钮链接</label><input id="pop-btnLink" class="input" placeholder="https:// 或 /#xxx" /></div>
+        </div>
+
+        <h3 style="margin:22px 0 12px">🤖 AI 顾问话术</h3>
+        <div class="form-grid" id="ai-form">
+          <div class="full"><label>开场白（覆盖默认欢迎语）</label><textarea id="ai-opening" class="input" rows="3"></textarea></div>
+          <div class="full"><label>示例问题（每行一条，覆盖默认）</label><textarea id="ai-examples" class="input" rows="4"></textarea></div>
+          <div class="full"><label>额外话术要求（注入系统提示，如语气 / 重点推荐）</label><textarea id="ai-extra" class="input" rows="2"></textarea></div>
+        </div>
+
+        <button class="btn btn-primary" id="ops-save" style="margin-top:14px">保存运营配置</button>
+      </section>
+
+      <!-- 订单管理 -->
+      <section class="panel" id="tab-orders">
+        <p class="muted" style="color:var(--muted);font-size:13px;margin:0 0 12px">用户在前端支付页提交开通申请后生成的订单。用户付款后，请核对收款记录，点「标记已处理」并在「用户管理」手动开通对应会员等级、发送资料包。</p>
+        <table class="admin-table">
+          <thead><tr><th>订单号</th><th>用户</th><th>套餐</th><th>金额</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+          <tbody id="order-list"></tbody>
+        </table>
+      </section>
+
+      <!-- 支付配置 -->
+      <section class="panel" id="tab-pay">
+        <p class="muted" style="color:var(--muted);font-size:13px;margin:0 0 14px">上传你的个人微信 / 支付宝收款码，用户在前端支付页扫码付款后，按提示添加客服微信；你在「用户管理」手动为其开通对应会员等级并发送资料包。</p>
+        <div class="form-grid">
+          <div class="full"><label>微信收款码（图片，自动转存储）</label>
+            <input type="file" id="pay-wechat-file" accept="image/*" class="input" />
+            <div id="pay-wechat-prev" class="qr-prev"></div>
+          </div>
+          <div class="full"><label>支付宝收款码（图片，自动转存储）</label>
+            <input type="file" id="pay-alipay-file" accept="image/*" class="input" />
+            <div id="pay-alipay-prev" class="qr-prev"></div>
+          </div>
+          <div class="full"><label>支付页提示语（默认：付款后添加客服微信，手动开通会员权限）</label>
+            <input type="text" id="pay-note" class="input" placeholder="付款后添加客服微信，手动开通会员权限" /></div>
+          <div class="full"><label>客服微信号（付款后引导用户添加）</label>
+            <input type="text" id="pay-cs" class="input" placeholder="例如 opc-service" /></div>
+        </div>
+        <button class="btn btn-primary" id="pay-save" style="margin-top:14px">保存支付配置</button>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast-mini" id="toast-mini"></div>
+  <script src="assets/admin.js"></script>
+</body>
+</html>

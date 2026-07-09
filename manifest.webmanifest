@@ -1,0 +1,20 @@
+{
+  "name": "OPC 一人公司赛道选型",
+  "short_name": "OPC赛道选型",
+  "description": "面向单人创业者与副业群体的轻量化工具型 SaaS：对话框 AI 顾问 1 分钟测赛道，或问卷式精准测评，匹配最适合你的轻资产方向。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#070A12",
+  "theme_color": "#070A12",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
