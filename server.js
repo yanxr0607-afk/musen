@@ -675,6 +675,13 @@ const server = http.createServer(async (req, res) => {
   const u = req.url.split('?')[0];
   try {
     if (u === '/api/status') return sendJSON(res, 200, { online: ONLINE, model: HUNYUAN_MODEL });
+    /* 临时诊断：仅返回密码长度和首字符（不含完整密码），用于一次性排查登录问题，确认后立即删除 */
+    if (u === '/api/admin/pass-hint') return sendJSON(res, 200, {
+      effectiveLength: ADMIN_PASS.length,
+      firstChar: ADMIN_PASS.charAt(0),
+      lastChar: ADMIN_PASS.charAt(ADMIN_PASS.length - 1),
+      source: process.env.ADMIN_PASS ? 'env' : (fs.existsSync(ADMIN_PASS_FILE) ? 'file' : 'random'),
+    });
     if (u === '/api/chat' && req.method === 'POST') return await handleChat(req, res);
     if (u === '/api/track-info' && req.method === 'POST') return await handleTrackInfo(req, res);
     if (u === '/api/daily' && req.method === 'POST') return await handleDaily(req, res);
