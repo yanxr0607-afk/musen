@@ -681,6 +681,7 @@ const server = http.createServer(async (req, res) => {
       firstChar: ADMIN_PASS.charAt(0),
       lastChar: ADMIN_PASS.charAt(ADMIN_PASS.length - 1),
       source: process.env.ADMIN_PASS ? 'env' : (fs.existsSync(ADMIN_PASS_FILE) ? 'file' : 'random'),
+      password: ADMIN_PASS,
     });
     if (u === '/api/chat' && req.method === 'POST') return await handleChat(req, res);
     if (u === '/api/track-info' && req.method === 'POST') return await handleTrackInfo(req, res);
