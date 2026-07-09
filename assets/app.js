@@ -108,6 +108,25 @@
     if (tml) tml.textContent = (plan && state.membership !== 'free') ? plan.name : '会员';
   }
 
+  /* 向服务端同步会员状态：后台人工开通后，前端自动感知并更新 localStorage */
+  async function syncMembership() {
+    if (!state.user) return;   // 未登录不请求
+    try {
+      const res = await apiFetch('/api/user/profile?name=' + encodeURIComponent(state.user.name));
+      if (!res || !res.ok || !res.membership) return;
+      const serverMem = res.membership;
+      if (serverMem !== state.membership) {
+        const prev = state.membership;
+        state.membership = serverMem;
+        localStorage.setItem('opc_membership', serverMem);
+        refreshMemberLabel();
+        renderHome();
+        toast('🎉 会员状态已更新：' + (PLANS.find(p => p.id === serverMem) || {}).name);
+        console.log('[sync] membership changed: ' + prev + ' → ' + serverMem);
+      }
+    } catch(e) { /* 离线或后端不可达时静默 */ }
+  }
+
   /* 账号密码（本地存储，演示用轻量哈希；生产环境应由后端用 bcrypt/argon2 存储） */
   function hashPwd(name, pass) {
     // 以昵称作盐：相同密码、不同账号哈希不同；同步实现，兼容非安全上下文（http 局域网）
@@ -1124,6 +1143,7 @@ ${summary}
 
   /* ====================== 会员开通 ====================== */
   function openMembership() {
+    syncMembership();  // 打开弹窗时同步一次，确保后台开通后即时显示
     $('#member-grid').innerHTML = PLANS.map(p => `
       <div class="plan-card ${p.highlight ? 'plan-hot' : ''} ${state.membership === p.id ? 'plan-current' : ''}">
         ${p.highlight ? '<div class="plan-badge">最受欢迎</div>' : ''}
@@ -1455,6 +1475,7 @@ ${summary}
     renderAccount();
     ensureValidMembership();   // 有账号但 membership 异常时回退 free
     refreshMemberLabel();      // 确保标签同步
+    syncMembership();          // 向服务端同步会员状态（后台开通后前端自动生效）
     $('#go-tools').addEventListener('click', () => { renderTools(); showView('tools'); });
     $('#tools-back').addEventListener('click', () => showView('detail'));
     showView('home');

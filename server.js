@@ -680,6 +680,17 @@ const server = http.createServer(async (req, res) => {
     if (u === '/api/daily' && req.method === 'POST') return await handleDaily(req, res);
     if (u === '/api/view' && req.method === 'POST') return await handleView(req, res);
     if (u === '/api/views' && req.method === 'GET') return await handleViews(req, res);
+/* ---- 公开：用户会员状态同步（前端 localStorage → 服务端 store.json 对齐） ---- */
+function handleUserProfile(req, res) {
+  // 从查询参数或注册时用的方式识别用户（name + hash 或仅 name）
+  const name = String((req.url.match(/[?&]name=([^&]*)/) || [])[1] || '').trim().slice(0, 32);
+  if (!name) return sendJSON(res, 200, { ok: true, membership: null });  // 未登录，不返回
+  const s = loadStore();
+  const u = s.users.find(x => x.name === name);
+  if (!u) return sendJSON(res, 200, { ok: true, membership: null });     // 未注册
+  return sendJSON(res, 200, { ok: true, membership: u.membership || 'free', name: u.name });
+}
+
     /* 公开内容 / 上报 */
     if (u === '/api/tracks' && req.method === 'GET') return handleTracks(req, res);
     if (u === '/api/cases' && req.method === 'GET') return handleCases(req, res);
@@ -690,6 +701,7 @@ const server = http.createServer(async (req, res) => {
     if (u === '/api/pay-config' && req.method === 'GET') return handlePayConfig(req, res);
     if (u === '/api/checkout' && req.method === 'POST') return await handleCheckout(req, res);
     if (u === '/api/pay' && req.method === 'POST') return await handlePay(req, res);
+    if (u === '/api/user/profile' && req.method === 'GET') return handleUserProfile(req, res);
     /* 后台鉴权入口 */
     if (u === '/api/admin/login' && req.method === 'POST') return await handleAdminLogin(req, res);
     /* 后台受保护接口 */
