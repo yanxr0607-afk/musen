@@ -641,6 +641,13 @@ const server = http.createServer(async (req, res) => {
   const u = req.url.split('?')[0];
   try {
     if (u === '/api/status') return sendJSON(res, 200, { online: ONLINE, model: HUNYUAN_MODEL });
+    if (u === '/api/admin/env-diagnostics') return sendJSON(res, 200, {
+      adminPassFromEnv: !!process.env.ADMIN_PASS,
+      adminPassLength: (process.env.ADMIN_PASS || '').length,
+      adminPassIsDefault: !process.env.ADMIN_PASS,
+      nodeEnv: process.env.NODE_ENV || 'unset',
+      port: process.env.PORT || 'unset',
+    });
     if (u === '/api/chat' && req.method === 'POST') return await handleChat(req, res);
     if (u === '/api/track-info' && req.method === 'POST') return await handleTrackInfo(req, res);
     if (u === '/api/daily' && req.method === 'POST') return await handleDaily(req, res);
