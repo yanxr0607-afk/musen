@@ -616,7 +616,7 @@ async function handleAdminSetPassword(req, res) {
   if (!newPass || newPass.length < 4) return sendJSON(res, 400, { error: '密码至少 4 位' });
   if (newPass.length > 64) return sendJSON(res, 400, { error: '密码不超过 64 位' });
   try {
-    ensureDataDir();
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(ADMIN_PASS_FILE, newPass, 'utf8');
     ADMIN_PASS = newPass;
     /* 使所有旧 token 失效（强制重新登录） */
