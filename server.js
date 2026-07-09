@@ -670,6 +670,11 @@ const server = http.createServer(async (req, res) => {
       adminPassIsDefault: !process.env.ADMIN_PASS,
       nodeEnv: process.env.NODE_ENV || 'unset',
       port: process.env.PORT || 'unset',
+      hunyuanKeyLen: (process.env.HUNYUAN_API_KEY || '').length,
+      hunyuanKeyHasStar: /[\*\u2022]/.test(process.env.HUNYUAN_API_KEY || ''),
+      hunyuanKeyHasSpace: /\s/.test(process.env.HUNYUAN_API_KEY || ''),
+      hunyuanKeyHead: (process.env.HUNYUAN_API_KEY || '').slice(0, 6),
+      hunyuanKeyTail: (process.env.HUNYUAN_API_KEY || '').slice(-6),
     });
     if (u === '/api/chat' && req.method === 'POST') return await handleChat(req, res);
     if (u === '/api/track-info' && req.method === 'POST') return await handleTrackInfo(req, res);
