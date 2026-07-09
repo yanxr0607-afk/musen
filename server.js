@@ -294,12 +294,10 @@ const ADMIN_PASS_FILE = path.join(DATA_DIR, 'admin-pass.txt');
 /* 密码优先级：data/admin-pass.txt 文件 > ADMIN_PASS 环境变量 > 默认值 */
 function loadAdminPass() {
   /* 优先级：data/admin-pass.txt 文件 > ADMIN_PASS 环境变量 > 随机生成（绝不回退到明文默认弱密码） */
-  try { if (fs.existsSync(ADMIN_PASS_FILE)) { const p = fs.readFileSync(ADMIN_PASS_FILE, 'utf8').trim(); if (p) return p; } } catch(e) {}
   const env = (process.env.ADMIN_PASS || '').trim();
-  if (env && env !== 'opc-admin-dev') return env;  // 仅当用户显式设置了非默认弱密码才采用环境变量值
-  if (env === 'opc-admin-dev') {
-    console.warn('[admin] 检测到 ADMIN_PASS 仍为默认弱密码 opc-admin-dev，已忽略，改用随机密码。请在 Railway Variables 设置强密码，或登录后到「安全设置」修改。');
-  }
+  if (env && env !== 'opc-admin-dev') return env;  // 环境变量最高优先级：用户明确意图，避免持久卷文件覆盖
+  if (env === 'opc-admin-dev') { console.warn('[admin] 检测到 ADMIN_PASS 仍为默认弱密码 opc-admin-dev，已忽略。请在 Railway Variables 设置强密码。'); }
+  try { if (fs.existsSync(ADMIN_PASS_FILE)) { const p = fs.readFileSync(ADMIN_PASS_FILE, 'utf8').trim(); if (p && p !== 'opc-admin-dev') return p; } } catch(e) {}
   /* 兜底：未配置或仍为默认弱密码 → 生成随机强密码写入文件，避免默认密码被登录 */
   const rand = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
   try {
