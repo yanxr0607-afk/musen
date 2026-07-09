@@ -293,8 +293,21 @@ const STORE_FILE = path.join(DATA_DIR, 'store.json');
 const ADMIN_PASS_FILE = path.join(DATA_DIR, 'admin-pass.txt');
 /* 密码优先级：data/admin-pass.txt 文件 > ADMIN_PASS 环境变量 > 默认值 */
 function loadAdminPass() {
+  /* 优先级：data/admin-pass.txt 文件 > ADMIN_PASS 环境变量 > 随机生成（绝不回退到明文默认弱密码） */
   try { if (fs.existsSync(ADMIN_PASS_FILE)) { const p = fs.readFileSync(ADMIN_PASS_FILE, 'utf8').trim(); if (p) return p; } } catch(e) {}
-  return process.env.ADMIN_PASS || 'opc-admin-dev';
+  const env = (process.env.ADMIN_PASS || '').trim();
+  if (env && env !== 'opc-admin-dev') return env;  // 仅当用户显式设置了非默认弱密码才采用环境变量值
+  if (env === 'opc-admin-dev') {
+    console.warn('[admin] 检测到 ADMIN_PASS 仍为默认弱密码 opc-admin-dev，已忽略，改用随机密码。请在 Railway Variables 设置强密码，或登录后到「安全设置」修改。');
+  }
+  /* 兜底：未配置或仍为默认弱密码 → 生成随机强密码写入文件，避免默认密码被登录 */
+  const rand = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(ADMIN_PASS_FILE, rand, 'utf8');
+    console.log('[admin] 已生成随机后台密码并写入 data/admin-pass.txt: ' + rand);
+  } catch (e) { console.warn('[admin] 写入随机密码失败:', e.message); }
+  return rand;
 }
 let ADMIN_PASS = loadAdminPass();
 const adminTokens = new Set();
@@ -664,18 +677,6 @@ const server = http.createServer(async (req, res) => {
   const u = req.url.split('?')[0];
   try {
     if (u === '/api/status') return sendJSON(res, 200, { online: ONLINE, model: HUNYUAN_MODEL });
-    if (u === '/api/admin/env-diagnostics') return sendJSON(res, 200, {
-      adminPassFromEnv: !!process.env.ADMIN_PASS,
-      adminPassLength: (process.env.ADMIN_PASS || '').length,
-      adminPassIsDefault: !process.env.ADMIN_PASS,
-      nodeEnv: process.env.NODE_ENV || 'unset',
-      port: process.env.PORT || 'unset',
-      hunyuanKeyLen: (process.env.HUNYUAN_API_KEY || '').length,
-      hunyuanKeyHasStar: /[\*\u2022]/.test(process.env.HUNYUAN_API_KEY || ''),
-      hunyuanKeyHasSpace: /\s/.test(process.env.HUNYUAN_API_KEY || ''),
-      hunyuanKeyHead: (process.env.HUNYUAN_API_KEY || '').slice(0, 6),
-      hunyuanKeyTail: (process.env.HUNYUAN_API_KEY || '').slice(-6),
-    });
     if (u === '/api/chat' && req.method === 'POST') return await handleChat(req, res);
     if (u === '/api/track-info' && req.method === 'POST') return await handleTrackInfo(req, res);
     if (u === '/api/daily' && req.method === 'POST') return await handleDaily(req, res);
