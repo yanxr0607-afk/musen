@@ -1277,26 +1277,23 @@ ${summary}
     const err = $('#register-err'); if (err) err.textContent = '';
     const n = $('#reg-name'); if (n) n.value = '';
     const p = $('#reg-pass'); if (p) p.value = '';
-    const p2 = $('#reg-pass2'); if (p2) p2.value = '';
     const sh = $('#reg-show'); if (sh) sh.checked = false;
     setPassType('password');
     setTimeout(() => { if (n) n.focus(); }, 60);
     $('#register-modal').classList.add('open');
   }
   function setPassType(t) {
-    const a = $('#reg-pass'), b = $('#reg-pass2');
-    if (a) a.type = t; if (b) b.type = t;
+    const a = $('#reg-pass');
+    if (a) a.type = t;
   }
   function closeRegister() { $('#register-modal').classList.remove('open'); }
   function doRegister() {
     const nameInp = $('#reg-name'); const name = (nameInp.value || '').trim();
     const passInp = $('#reg-pass'); const pass = passInp.value || '';
-    const pass2Inp = $('#reg-pass2'); const pass2 = pass2Inp.value || '';
     const err = $('#register-err');
     if (!name) { if (err) err.textContent = '请输入昵称'; return; }
     if (name.length > 16) { if (err) err.textContent = '昵称不超过 16 字'; return; }
     if (pass.length < 6 || pass.length > 20) { if (err) err.textContent = '密码需 6-20 位'; return; }
-    if (pass !== pass2) { if (err) err.textContent = '两次输入的密码不一致'; return; }
 
     const accounts = loadAccounts();
     let isLogin = false;
@@ -1512,7 +1509,6 @@ ${summary}
     $('#pay-submit').addEventListener('click', submitPay);
     const regInp = $('#reg-name'); if (regInp) regInp.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
     const regPass = $('#reg-pass'); if (regPass) regPass.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
-    const regPass2 = $('#reg-pass2'); if (regPass2) regPass2.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
     const regShow = $('#reg-show'); if (regShow) regShow.addEventListener('change', e => setPassType(e.target.checked ? 'text' : 'password'));
     renderAccount();
     ensureValidMembership();   // 有账号但 membership 异常时回退 free
