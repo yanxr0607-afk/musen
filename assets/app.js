@@ -76,7 +76,6 @@
     membership: loadMembership(),
     user: loadUser(),
     pendingAction: null,
-    testUsed: +(localStorage.getItem('opc_test_used') || 0),
     chatHasResult: false,
   };
 
@@ -149,16 +148,48 @@
     return false;
   }
 
-  /* 免费版测评配额：仅可体验 3 次（AI 顾问对话 / 问卷测评 合计） */
+  /* 免费版每日配额（按自然日重置，localStorage 存 日期+次数）
+     1) 智能测评 / 匹配测试：每日 3 次（AI 顾问对话 + 问卷测评 合计）
+     2) 每日商机"查看赛道详情"：每日 3 条 */
   const FREE_TEST_LIMIT = 3;
-  function canTest() { return isUnlocked() || state.testUsed < FREE_TEST_LIMIT; }
+  const DAILY_DETAIL_LIMIT = 3;
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  function loadDailyQuota(key) {
+    try {
+      const raw = localStorage.getItem('opc_daily_' + key);
+      if (!raw) return { date: todayKey(), count: 0 };
+      const o = JSON.parse(raw);
+      return o && o.date === todayKey() ? o : { date: todayKey(), count: 0 };
+    } catch (e) { return { date: todayKey(), count: 0 }; }
+  }
+  function saveDailyQuota(key, count) {
+    try { localStorage.setItem('opc_daily_' + key, JSON.stringify({ date: todayKey(), count })); } catch (e) {}
+  }
+  /* —— 智能测评 / 匹配测试 —— */
+  function dailyTestLeft() { return isUnlocked() ? Infinity : Math.max(0, FREE_TEST_LIMIT - loadDailyQuota('test').count); }
+  function canTest() { return isUnlocked() || dailyTestLeft() > 0; }
   function consumeTestQuota() {
-    if (isUnlocked()) return;                 // 会员不限次
-    state.testUsed = Math.min(FREE_TEST_LIMIT, state.testUsed + 1);
-    localStorage.setItem('opc_test_used', state.testUsed);
+    if (isUnlocked()) return;                       // 会员不限次
+    const o = loadDailyQuota('test');
+    saveDailyQuota('test', Math.min(FREE_TEST_LIMIT, o.count + 1));
   }
   function showTestLimit() {
-    toast('免费版体验已用完 · 开通会员畅测全部赛道 🚀');
+    toast('免费版今日测评已用完（每日 3 次）· 开通会员畅测全部赛道 🚀');
+    openMembership();
+  }
+  /* —— 每日商机"查看赛道详情" —— */
+  function dailyDetailLeft() { return isUnlocked() ? Infinity : Math.max(0, DAILY_DETAIL_LIMIT - loadDailyQuota('detail').count); }
+  function canOpenDailyDetail() { return isUnlocked() || dailyDetailLeft() > 0; }
+  function consumeDetailQuota() {
+    if (isUnlocked()) return;                       // 会员不限次
+    const o = loadDailyQuota('detail');
+    saveDailyQuota('detail', Math.min(DAILY_DETAIL_LIMIT, o.count + 1));
+  }
+  function showDailyDetailLimit() {
+    toast('免费版今日商机详情已看完（每日 3 条）· 开通会员解锁全部赛道 🚀');
     openMembership();
   }
 
@@ -836,7 +867,11 @@ ${summary}
   function renderDaily(boardEl, dateEl, limit, aiMap) {
     if (!boardEl) return;
     const today = new Date();
-    if (dateEl) dateEl.textContent = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日 · 共 ${DAILY_BOARD.length} 个赛道 · 热度随日期动态变化`;
+    if (dateEl) {
+      let txt = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日 · 共 ${DAILY_BOARD.length} 个赛道 · 热度随日期动态变化`;
+      if (!isUnlocked() && dailyDetailLeft() < DAILY_DETAIL_LIMIT) txt += ` · 免费版今日还可看 ${dailyDetailLeft()} 条赛道详情`;
+      dateEl.textContent = txt;
+    }
     const ranked = DAILY_BOARD.map(d => {
       const t = liveTracks().find(x => x.id === d.id);
       const ai = aiMap && aiMap[d.id];
@@ -857,7 +892,12 @@ ${summary}
         <button class="btn btn-ghost btn-sm daily-more" data-track="${r.d.id}">查看赛道详情 →</button>
       </article>`).join('');
     $$('#' + boardEl.id + ' [data-track]').forEach(el =>
-      el.addEventListener('click', e => { e.stopPropagation(); openDetail(el.dataset.track, false); }));
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        if (!canOpenDailyDetail()) { showDailyDetailLimit(); return; }
+        consumeDetailQuota();
+        openDetail(el.dataset.track, false);
+      }));
   }
   /* 每日商机：若混元在线，拉取 AI 生成的当日商机/痛点（需求 1） */
   async function refreshDailyAI(homeLimit) {
