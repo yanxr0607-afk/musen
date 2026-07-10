@@ -668,6 +668,51 @@ function serveStatic(req, res) {
 }
 
 /* ---------------- 主服务 ---------------- */
+/* ===== 后台 IP 白名单（用于"前台免 VPN、后台翻墙"部署） =====
+   设置环境变量 ADMIN_ALLOW_IPS（逗号分隔，支持 CIDR，如 "1.2.3.4, 10.0.0.0/8"）。
+   未设置则该限制不生效（向后兼容当前 Railway 部署）。私网/本机地址始终放行。 */
+function ipToLong(ip) {
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
+  if (!m) return null;
+  return (((+m[1] << 24) >>> 0) + (+m[2] << 16) + (+m[3] << 8) + (+m[4])) >>> 0;
+}
+function isPrivateOrLocal(ip) {
+  if (!ip) return false;
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') return true;
+  const long = ipToLong(ip);
+  if (long === null) return false;
+  const inRange = (a, b) => long >= ipToLong(a) && long <= ipToLong(b);
+  return inRange('10.0.0.0', '10.255.255.255') ||
+         inRange('172.16.0.0', '172.31.255.255') ||
+         inRange('192.168.0.0', '192.168.255.255');
+}
+function getClientIp(req) {
+  const rip = req.socket.remoteAddress || '';
+  if (!isPrivateOrLocal(rip)) return rip;            // 直连：用真实公网 IP（防 XFF 伪造）
+  const xff = req.headers['x-forwarded-for'];          // 前面有反代：信任其写入的 XFF
+  if (xff) return String(xff).split(',')[0].trim();
+  return rip;
+}
+function isAdminAllowed(req) {
+  const allow = (process.env.ADMIN_ALLOW_IPS || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (allow.length === 0) return true;                // 未配置 → 不限制（向后兼容）
+  const ip = getClientIp(req);
+  if (isPrivateOrLocal(ip)) return true;
+  for (const rule of allow) {
+    if (rule.includes('/')) {
+      const [base, bitsRaw] = rule.split('/');
+      const bLong = ipToLong(base), iLong = ipToLong(ip);
+      if (bLong === null || iLong === null) continue;
+      const bits = +bitsRaw || 32;
+      const mask = (0xFFFFFFFF << (32 - bits)) >>> 0;
+      if ((iLong & mask) === (bLong & mask)) return true;
+    } else if (rule === ip) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const server = http.createServer(async (req, res) => {
   /* CORS：允许跨域访问 API（前端静态托管与后端分离部署时仍可连通） */
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -675,6 +720,12 @@ const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-admin-token');
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   const u = req.url.split('?')[0];
+  /* 后台访问白名单：仅放行 ADMIN_ALLOW_IPS 指定的 IP/网段（实现"后台翻墙、前台免 VPN"）。
+     未设置 ADMIN_ALLOW_IPS 则该限制不生效（向后兼容当前 Railway 部署）。私网/本机地址始终放行。 */
+  if ((u === '/admin' || u === '/admin.html' || u.startsWith('/api/admin')) && !isAdminAllowed(req)) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('403 Forbidden — 后台仅限授权网络访问（请通过 VPN 或授权 IP 进入）');
+  }
   try {
     if (u === '/api/status') return sendJSON(res, 200, { online: ONLINE, model: HUNYUAN_MODEL });
     if (u === '/api/chat' && req.method === 'POST') return await handleChat(req, res);
