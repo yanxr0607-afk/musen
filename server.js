@@ -732,6 +732,23 @@ function handleUserProfile(req, res) {
   }
 });
 
+/* 启动自检：明确 DATA_DIR 落盘位置，避免 Railway ephemeral 文件系统导致数据静默丢失 */
+(function checkDataDir() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    const testFile = path.join(DATA_DIR, '.write_test_' + Date.now());
+    fs.writeFileSync(testFile, 'ok');
+    fs.unlinkSync(testFile);
+    console.log(`数据目录 (DATA_DIR) ➜ ${path.resolve(DATA_DIR)}  [可读写 ✅]`);
+    const abs = path.resolve(DATA_DIR);
+    if (/^\/app\/data$|[\\/]app[\\/]data$/.test(abs) && !process.env.DATA_DIR) {
+      console.warn(`⚠️  当前 DATA_DIR 指向容器临时盘（${abs}），无持久卷时每次重启 store.json/admin-pass.txt 会丢失！请挂载持久卷并设环境变量 DATA_DIR=/data`);
+    }
+  } catch (e) {
+    console.error(`数据目录 (DATA_DIR) ➜ ${path.resolve(DATA_DIR)}  [不可写 ❌: ${e.message}]`);
+  }
+})();
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`OPC SaaS server  ➜  http://127.0.0.1:${PORT}`);
   console.log(`混元大模型状态  ➜  ${ONLINE ? 'ONLINE (' + HUNYUAN_MODEL + ')' : 'OFFLINE（使用本地规则引擎，配置 HUNYUAN_API_KEY 后启用）'}`);
