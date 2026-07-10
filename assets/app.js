@@ -112,8 +112,10 @@
   async function syncMembership() {
     if (!state.user) return;   // 未登录不请求
     try {
-      const res = await apiFetch('/api/user/profile?name=' + encodeURIComponent(state.user.name));
-      if (!res || !res.ok || !res.membership) return;
+      const resp = await apiFetch('/api/user/profile?name=' + encodeURIComponent(state.user.name));
+      if (!resp || !resp.ok) return;
+      const res = await resp.json().catch(() => null);
+      if (!res || !res.membership) return;
       const serverMem = res.membership;
       if (serverMem !== state.membership) {
         const prev = state.membership;
@@ -1476,6 +1478,7 @@ ${summary}
     ensureValidMembership();   // 有账号但 membership 异常时回退 free
     refreshMemberLabel();      // 确保标签同步
     syncMembership();          // 向服务端同步会员状态（后台开通后前端自动生效）
+    setInterval(syncMembership, 30000);  // 后台开通会员后，前端每 30 秒自动感知并刷新
     $('#go-tools').addEventListener('click', () => { renderTools(); showView('tools'); });
     $('#tools-back').addEventListener('click', () => showView('detail'));
     showView('home');
