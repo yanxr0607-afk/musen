@@ -36,8 +36,10 @@ function loadEnv() {
 loadEnv();
 
 const HUNYUAN_KEY = process.env.HUNYUAN_API_KEY || '';
-const HUNYUAN_MODEL = process.env.HUNYUAN_MODEL || 'hunyuan-turbo';
-const HUNYUAN_URL = process.env.HUNYUAN_URL || 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions';
+// 默认值采用已验证可用的腾讯云 TokenHub 体系（hy3），本机零配置 node server.js 即可直接接通混元。
+// Railway 等已通过环境变量 HUNYUAN_URL / HUNYUAN_MODEL / HUNYUAN_API_KEY 覆盖，不受此默认值影响。
+const HUNYUAN_MODEL = process.env.HUNYUAN_MODEL || 'hy3';
+const HUNYUAN_URL = process.env.HUNYUAN_URL || 'https://tokenhub-intl.tencentmaas.com/v1/chat/completions';
 const FORCE_JSON = process.env.HUNYUAN_JSON !== '0'; // 默认要求 JSON 输出
 const ONLINE = !!HUNYUAN_KEY;
 
