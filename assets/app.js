@@ -149,8 +149,8 @@
     return false;
   }
 
-  /* 免费版测评配额：仅可体验 1 次（AI 顾问对话 / 问卷测评 合计） */
-  const FREE_TEST_LIMIT = 1;
+  /* 免费版测评配额：仅可体验 3 次（AI 顾问对话 / 问卷测评 合计） */
+  const FREE_TEST_LIMIT = 3;
   function canTest() { return isUnlocked() || state.testUsed < FREE_TEST_LIMIT; }
   function consumeTestQuota() {
     if (isUnlocked()) return;                 // 会员不限次

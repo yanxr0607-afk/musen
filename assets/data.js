@@ -516,7 +516,7 @@ const PLANS = [
   {
     id: 'free', name: '免费版', price: '0 元', period: '/ 月',
     highlight: false, target: '引流获客',
-    benefits: ['1 次匹配测试', '赛道基础信息预览', '3 条赛道详情试看'],
+    benefits: ['3 次匹配测试', '赛道基础信息预览', '3 条赛道详情试看'],
     cta: '免费开始'
   },
   {
