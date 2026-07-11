@@ -651,6 +651,7 @@ function serveStatic(req, res) {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p === '/') p = '/index.html';
   if (p === '/admin') p = '/admin.html';
+  if (p === '/landing') p = '/landing.html';
   const safe = path.normalize(p).replace(/^(\.\.[/\\])+/, '');
   const fp = path.join(ROOT, safe);
   if (!fp.startsWith(ROOT)) { res.writeHead(403); return res.end('forbidden'); }
