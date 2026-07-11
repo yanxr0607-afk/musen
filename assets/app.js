@@ -147,11 +147,23 @@
     toast('请先注册，注册即免费会员 🎁');
     return false;
   }
+  /* 测试入口守卫：访客可免费体验 1 次，注册用户每日 3 次，会员不限 */
+  function enterTestGuard() {
+    if (state.user) {
+      if (!canTest()) { showTestLimit(); return false; }
+      return true;
+    }
+    if (dailyTestLeft() > 0) return true;             // 访客还有 1 次体验
+    toast('注册即免费会员，每日可测评 3 次 🎁');
+    openRegister();
+    return false;
+  }
 
   /* 免费版每日配额（按自然日重置，localStorage 存 日期+次数）
      1) 智能测评 / 匹配测试：每日 3 次（AI 顾问对话 + 问卷测评 合计）
      2) 每日商机"查看赛道详情"：每日 3 条 */
-  const FREE_TEST_LIMIT = 3;
+  const FREE_TEST_LIMIT = 3;          // 注册免费会员：每日 3 次测评
+  const GUEST_TEST_LIMIT = 1;         // 未注册访客：终身 1 次体验
   const DAILY_DETAIL_LIMIT = 3;
   function todayKey() {
     const d = new Date();
@@ -168,15 +180,22 @@
   function saveDailyQuota(key, count) {
     try { localStorage.setItem('opc_daily_' + key, JSON.stringify({ date: todayKey(), count })); } catch (e) {}
   }
+  function guestTestUsed() { try { return +(localStorage.getItem('opc_guest_test_used') || 0); } catch (e) { return 0; } }
+  function markGuestTest() { try { localStorage.setItem('opc_guest_test_used', '1'); } catch (e) {} }
   /* —— 智能测评 / 匹配测试 —— */
-  function dailyTestLeft() { return isUnlocked() ? Infinity : Math.max(0, FREE_TEST_LIMIT - loadDailyQuota('test').count); }
+  function dailyTestLeft() {
+    if (isUnlocked()) return Infinity;                                       // 会员不限次
+    if (state.user) return Math.max(0, FREE_TEST_LIMIT - loadDailyQuota('test').count); // 注册免费版：每日 3 次
+    return Math.max(0, GUEST_TEST_LIMIT - guestTestUsed());                 // 访客：终身 1 次
+  }
   function canTest() { return isUnlocked() || dailyTestLeft() > 0; }
   function consumeTestQuota() {
-    if (isUnlocked()) return;                       // 会员不限次
-    const o = loadDailyQuota('test');
-    saveDailyQuota('test', Math.min(FREE_TEST_LIMIT, o.count + 1));
+    if (isUnlocked()) return;                                                // 会员不限次
+    if (state.user) { const o = loadDailyQuota('test'); saveDailyQuota('test', Math.min(FREE_TEST_LIMIT, o.count + 1)); }
+    else { markGuestTest(); }                                                // 访客用掉终身 1 次
   }
   function showTestLimit() {
+    if (!state.user) { toast('注册即免费会员，每日可测评 3 次 🎁'); openRegister(); return; }
     toast('免费版今日测评已用完（每日 3 次）· 开通会员畅测全部赛道 🚀');
     openMembership();
   }
@@ -455,7 +474,7 @@
 
   /* ====================== 模式选择 ====================== */
   function openChatMode() {
-    if (!requireRegister()) return;
+    if (!enterTestGuard()) return;
     state.mode = 'chat'; state.chatAnswers = {};
     const log = $('#chat-log'); log.innerHTML = '';
     const ta = $('#chat-input'); ta.value = ''; ta.style.height = 'auto';
@@ -465,8 +484,7 @@
     showView('chat');
   }
   function startQuiz() {
-    if (!requireRegister()) return;
-    if (!canTest()) { showTestLimit(); return; }
+    if (!enterTestGuard()) return;
     state.mode = 'quiz'; state.quizStage = 1; state.quizStep = 0; state.answers = {};
     renderStage(); showView('quiz');
   }
