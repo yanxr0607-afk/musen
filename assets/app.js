@@ -211,6 +211,15 @@
     toast('免费版今日商机详情已看完（每日 3 条）· 开通会员解锁全部赛道 🚀');
     openMembership();
   }
+  /* 访客测评结果页引导小字（仅未注册显示） */
+  function guestTestHintHTML() {
+    if (state.user) return '';
+    return `<div class="guest-test-hint">🎁 你已免费体验 1 次测评 · <b>注册即免费会员，每日可测 3 次</b>，还能解锁落地工具与每日商机<button class="guest-go-register" type="button">立即注册 →</button></div>`;
+  }
+  function bindGuestHint(root) {
+    const btn = (root || document).querySelector('.guest-go-register');
+    if (btn) btn.addEventListener('click', openRegister);
+  }
 
   /* 浏览量上报：每个浏览器会话计 1 次（sessionStorage 去重避免自刷暴涨） */
   // 浏览量改为不蒜子(busuanzi)前端计数，零后端，静态托管即可显示
@@ -798,11 +807,13 @@ ${summary}
         <button class="btn btn-ghost" id="chat-toquiz">去做完整测评，拿 30 天启动 SOP →</button>
       </div>
       <p class="chat-hint">想更准？直接在下面补充，比如「我其实有 5000 预算、会用 AI」</p>
+      ${guestTestHintHTML()}
     </div>`);
     $('#chat-log').appendChild(bar);
     $('#chat-log').scrollTop = $('#chat-log').scrollHeight;
     $('#chat-todetail').addEventListener('click', () => openDetail(t.id, false));
     $('#chat-toquiz').addEventListener('click', startQuiz);
+    bindGuestHint($('#chat-log'));
     $$('#chat-log .ochip').forEach(c => c.addEventListener('click', () => openDetail(c.dataset.track, false)));
     if (unknownTopics && unknownTopics.length) renderUnknownCard(unknownTopics);
   }
@@ -1099,6 +1110,8 @@ ${summary}
       ? `<div class="result-avatar">${icon('zap')}</div><p>快速测评完成！基于你的核心条件，先给你 <b>3 个</b> 高匹配赛道；<b>补充 6 题</b> 可解锁更精准的完整启动报告。</p>`
       : `<div class="result-avatar">${icon('target')}</div><p>完整测评完成！结合你的全部条件，为你生成 <b>3 个</b> 最优赛道与 30 天落地方案。</p>`;
     $('#result-list').innerHTML = state.results.map((r, i) => renderResultCard(r, i, quick)).join('');
+    const slot = $('#guest-hint-slot');
+    if (slot) { slot.innerHTML = guestTestHintHTML(); bindGuestHint(slot); }
     $$('#result-list [data-track]').forEach(b =>
       b.addEventListener('click', () => { if (b.hasAttribute('data-locked')) openMembership(); else openDetail(b.dataset.track, false); }));
     $$('#result-list [data-continue]').forEach(b => b.addEventListener('click', continueStage2));

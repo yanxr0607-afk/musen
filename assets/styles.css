@@ -454,6 +454,12 @@ button { font-family: inherit; cursor: pointer; }
 .chat-actions { padding: 10px 0 2px; display: flex; flex-direction: column; gap: 10px; }
 .chat-act-btns { display: flex; gap: 10px; flex-wrap: wrap; }
 .chat-hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.guest-test-hint { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 4px; padding: 10px 14px; background: linear-gradient(90deg, rgba(108,99,255,.10), rgba(38,150,255,.10)); border: 1px solid rgba(108,99,255,.28); border-radius: 12px; font-size: 13px; color: var(--text); }
+.guest-test-hint b { color: var(--violet); font-weight: 700; }
+.guest-go-register { margin-left: auto; flex: none; font: inherit; font-weight: 700; color: #fff; background: var(--violet); border: 0; border-radius: 999px; padding: 6px 14px; cursor: pointer; transition: .15s; }
+.guest-go-register:hover, .guest-go-register:focus-visible { background: var(--primary-d); outline: none; transform: translateY(-1px); }
+.guest-hint-slot:empty { display: none; }
+.guest-hint-slot { margin: 20px 0 4px; }
 
 /* ====================== 每日商机 & 痛点雷达 ====================== */
 .daily-head { margin-bottom: 8px; }
