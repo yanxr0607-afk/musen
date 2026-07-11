@@ -493,9 +493,7 @@
     showView('chat');
   }
   function startQuiz() {
-    if (!enterTestGuard()) return;
-    state.mode = 'quiz'; state.quizStage = 1; state.quizStep = 0; state.answers = {};
-    renderStage(); showView('quiz');
+    openAssessLevel();
   }
 
   /* ====================== 对话框式 AI 顾问（自由输入模式） ====================== */
@@ -1032,63 +1030,353 @@ ${summary}
     renderCases();
   }
 
-  /* ====================== 问卷式（两阶） ====================== */
-  function renderStage() {
-    const list = state.quizStage === 1 ? STAGE1 : STAGE2;
-    const q = list[state.quizStep];
-    const total = list.length;
-    const stageName = state.quizStage === 1 ? '第一阶 · 快速测评' : '第二阶 · 精准升级';
-    const answered = q.single ? !!state.answers[q.id] : arr(state.answers[q.id]).length > 0;
+  /* ====================== 新测评体系（初测 10 题 / 进阶 20 题） ====================== */
+  const ASSESS = window.ASSESS || {
+    cats: [], anchor: {}, common: [], specific: {}, confirm: {}, commonDeep: [],
+    specificDeep: {}, profile: {}, subtrackHints: {}, catSop: {}, catPitfalls: {}, catAction: {},
+  };
+  function catById(id) { return ASSESS.cats.find(c => c.id === id) || null; }
+  function dbCatsOf(id) { const c = catById(id); return c ? c.dbCats : []; }
+  function tracksOfCat(id) {
+    const db = dbCatsOf(id);
+    return liveTracks().filter(t => db.includes(t.cat));
+  }
+  function repCaseForCat(id) {
+    const db = dbCatsOf(id);
+    const cases = liveCases();
+    return cases.find(c => db.includes(c.cat)) || cases[0] || null;
+  }
+  function canTakeAdvanced() {
+    if (isUnlocked()) return true;
+    try { return localStorage.getItem('opc_advanced_unlock') === '1'; } catch (e) { return false; }
+  }
+  function buildInitialSeq(cat) {
+    const spec = ASSESS.specific[cat] || ASSESS.specific[Object.keys(ASSESS.specific)[0]] || [];
+    return [ASSESS.anchor].concat(ASSESS.common, spec);
+  }
+  function buildAdvancedSeq(cat) {
+    const spec = ASSESS.specificDeep[cat] || ASSESS.specificDeep[Object.keys(ASSESS.specificDeep)[0]] || [];
+    return [ASSESS.anchor].concat(ASSESS.commonDeep, spec);
+  }
+  function openAssessLevel() {
+    state.mode = 'assess';
+    showView('quiz');
+    renderLevelChooser();
+  }
+  function renderLevelChooser() {
+    const advancedOk = canTakeAdvanced();
+    const dailyLeft = dailyTestLeft();
+    const quotaTip = isUnlocked() ? '会员畅测全部赛道'
+      : (state.user ? `今日免费测评剩余 ${dailyLeft} 次` : '访客可免费体验 1 次');
+    $('#quiz-card').innerHTML = `
+      <div class="level-chooser">
+        <div class="lc-head">
+          <h2 class="quiz-q">选择你的测评方式</h2>
+          <p class="lc-sub">初测 2 分钟快速定位赛道大类，进阶 5 分钟精准匹配细分赛道 · ${esc(quotaTip)}</p>
+        </div>
+        <div class="lc-grid">
+          <div class="lc-card lc-initial" id="lc-initial" role="button" tabindex="0">
+            <span class="lc-badge lc-free">免费 · 引流钩子</span>
+            <div class="lc-ico">${icon('target', 30)}</div>
+            <h3>初测（10 题）</h3>
+            <p class="lc-tag">赛道大类 + 匹配度 + 通用 SOP + 代表案例</p>
+            <ul class="lc-points">
+              <li>1 道锚定题自动分支</li>
+              <li>6 道通用维度 + 3 道专属题</li>
+              <li>2 分钟做完，立即看结果</li>
+            </ul>
+            <span class="btn btn-primary lc-btn">开始初测 →</span>
+          </div>
+          <div class="lc-card lc-advanced ${advancedOk ? '' : 'lc-locked'}" id="lc-advanced" role="button" tabindex="0">
+            <span class="lc-badge ${advancedOk ? 'lc-ok' : 'lc-pay'}">${advancedOk ? '已解锁' : '¥9.9 / 会员'}</span>
+            <div class="lc-ico">${icon('sparkle', 30)}</div>
+            <h3>进阶测（20 题）</h3>
+            <p class="lc-tag">1-2 个精准细分赛道 + SOP + 案例 + 工具包</p>
+            <ul class="lc-points">
+              <li>1 道确认 + 9 道深挖 + 10 道专属</li>
+              <li>精准匹配 32 细分赛道中的最优</li>
+              <li>4 步落地 SOP + 避坑 + 行动清单</li>
+            </ul>
+            <span class="btn ${advancedOk ? 'btn-primary' : 'btn-ghost'} lc-btn">${advancedOk ? '开始进阶测 →' : '解锁进阶测 →'}</span>
+          </div>
+        </div>
+      </div>`;
+    const goInitial = () => startInitial();
+    const goAdvanced = () => { if (canTakeAdvanced()) startAdvanced(); else openAdvancedGate(); };
+    const ci = $('#lc-initial'); if (ci) { ci.addEventListener('click', goInitial); ci.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goInitial(); } }); }
+    const ca = $('#lc-advanced'); if (ca) { ca.addEventListener('click', goAdvanced); ca.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goAdvanced(); } }); }
+  }
+  function openAdvancedGate() {
+    if (!requireRegister(() => pickPlan('advanced'))) return;
+    pickPlan('advanced');
+  }
+  function startInitial() {
+    if (!enterTestGuard()) return;
+    state.assess = { tier: 'initial', cat: null, step: 0, answers: {} };
+    renderAssess();
+  }
+  function startAdvanced() {
+    const cat = state.lastInitialCat || null;
+    state.assess = { tier: 'advanced', cat: cat, step: 0, answers: {} };
+    if (cat) state.assess.answers.anchor = cat; // 预选方向，可改重选
+    renderAssess();
+  }
+  function renderAssess() {
+    const a = state.assess;
+    const seq = a.tier === 'initial' ? buildInitialSeq(a.cat) : buildAdvancedSeq(a.cat);
+    const q = seq[a.step];
+    const total = seq.length;
+    const stageName = a.tier === 'initial' ? '初测 · 免费版' : '进阶测 · 精准版';
+    const isAnchor = q.id === 'anchor';
+    const qTitle = (isAnchor && a.tier === 'advanced') ? '确认你的创业方向（可修改重选）' : q.title;
+    const qHint = (isAnchor && a.tier === 'advanced') ? '进阶测将基于你选的方向深挖专属题' : q.hint;
+    const answered = !!a.answers[q.id];
     const optionsHtml = q.options.map(o => {
-      const selected = q.single ? state.answers[q.id] === o.value : arr(state.answers[q.id]).includes(o.value);
+      const selected = a.answers[q.id] === o.value;
       return `<button class="opt ${selected ? 'opt-on' : ''}" data-value="${o.value}" role="option" aria-selected="${!!selected}">
                 <span class="opt-mark">${q.single ? '○' : '☐'}</span>${o.label}</button>`;
     }).join('');
     $('#quiz-card').innerHTML = `
-      <div class="quiz-progress"><div class="quiz-bar" style="width:${((state.quizStep) / total) * 100}%"></div></div>
-      <div class="quiz-meta"><b>${stageName}</b> · 第 ${state.quizStep + 1} / ${total} 题${q.hint ? ` · <em>${q.hint}</em>` : ''}</div>
-      <h2 class="quiz-q">${q.title}</h2>
+      <div class="quiz-progress"><div class="quiz-bar" style="width:${Math.round((a.step) / total * 100)}%"></div></div>
+      <div class="quiz-meta"><b>${stageName}</b> · 第 ${a.step + 1} / ${total} 题${qHint ? ` · <em>${esc(qHint)}</em>` : ''}</div>
+      <h2 class="quiz-q">${esc(qTitle)}</h2>
       <div class="opt-list" role="listbox">${optionsHtml}</div>
       <div class="quiz-actions">
-        <button class="btn btn-ghost" id="q-back">上一步</button>
-        <button class="btn btn-primary" id="q-next" ${answered ? '' : 'disabled'}>${state.quizStep === total - 1 ? (state.quizStage === 1 ? '生成简版结果 →' : '生成完整报告 →') : '下一步'}</button>
+        <button class="btn btn-ghost" id="q-back">${a.step === 0 ? '返回' : '上一步'}</button>
+        <button class="btn btn-primary" id="q-next" ${answered ? '' : 'disabled'}>${a.step === total - 1 ? (a.tier === 'initial' ? '生成初测结果 →' : '生成进阶报告 →') : '下一步'}</button>
       </div>`;
-    $$('#quiz-card .opt').forEach(b => b.addEventListener('click', () => onSelect(q, b)));
-    $('#q-back').addEventListener('click', onBack);
-    $('#q-next').addEventListener('click', onNext);
+    $$('#quiz-card .opt').forEach(b => b.addEventListener('click', () => onAssessSelect(q, b)));
+    $('#q-back').addEventListener('click', onAssessBack);
+    $('#q-next').addEventListener('click', () => onAssessNext(q));
   }
-  function onSelect(q, btn) {
+  function onAssessSelect(q, btn) {
+    const a = state.assess;
     const val = btn.dataset.value;
-    if (q.single) {
-      state.answers[q.id] = val;
-      $$('#quiz-card .opt').forEach(b => b.classList.remove('opt-on'));
-      btn.classList.add('opt-on');
-      $('#q-next').disabled = false;
-      setTimeout(() => { if (state.answers[q.id] === val) onNext(); }, 260);
-    } else {
-      const cur = arr(state.answers[q.id]);
-      const i = cur.indexOf(val);
-      if (i >= 0) cur.splice(i, 1); else cur.push(val);
-      if (val === 'none') { cur.length = 0; cur.push('none'); }
-      else { const n = cur.indexOf('none'); if (n >= 0) cur.splice(n, 1); }
-      state.answers[q.id] = cur;
-      btn.classList.toggle('opt-on', cur.includes(val));
-      $('#q-next').disabled = cur.length === 0;
-    }
+    if (q.id === 'anchor') a.cat = val; // 锁定大类，专属题随大类切换
+    a.answers[q.id] = val;
+    $$('#quiz-card .opt').forEach(b => b.classList.remove('opt-on'));
+    btn.classList.add('opt-on');
+    $('#q-next').disabled = false;
+    if (q.id === 'anchor' && a.step === 0) setTimeout(() => onAssessNext(q), 220);
   }
-  function onBack() {
-    if (state.quizStep > 0) { state.quizStep--; renderStage(); }
-    else if (state.quizStage === 2) { generateQuickResult(); }
-    else { showView('home'); }
+  function onAssessBack() {
+    const a = state.assess;
+    if (a.step > 0) { a.step--; renderAssess(); }
+    else renderLevelChooser();
   }
-  function onNext() {
-    const list = state.quizStage === 1 ? STAGE1 : STAGE2;
-    const q = list[state.quizStep];
-    const ok = q.single ? !!state.answers[q.id] : (arr(state.answers[q.id]).length > 0 || !q.required);
-    if (!ok) return;
-    if (state.quizStep < list.length - 1) { state.quizStep++; renderStage(); }
-    else if (state.quizStage === 1) { generateQuickResult(); }
-    else { generateFullResult(); }
+  function onAssessNext(q) {
+    const a = state.assess;
+    const seq = a.tier === 'initial' ? buildInitialSeq(a.cat) : buildAdvancedSeq(a.cat);
+    if (!a.answers[q.id]) return;
+    if (a.step < seq.length - 1) { a.step++; renderAssess(); }
+    else if (a.tier === 'initial') finishInitial();
+    else finishAdvanced();
+  }
+
+  /* —— 初测：大类匹配度 —— */
+  function computeCategoryMatch(cat, answers) {
+    const prof = (ASSESS.profile[cat] || {}).pref || {};
+    let score = 60;
+    ASSESS.common.forEach(q => {
+      const v = answers[q.id]; if (!v) return;
+      score += (prof[q.id] === v) ? 4 : 1;
+    });
+    (ASSESS.specific[cat] || []).forEach(q => {
+      const v = answers[q.id]; if (!v) return;
+      const ord = 'ABCD'.indexOf(v);
+      score += 2 + ord; // A=2 … D=5
+    });
+    return Math.max(60, Math.min(99, score));
+  }
+  function buildInitialReasons(cat, answers) {
+    const r = [];
+    const prof = (ASSESS.profile[cat] || {}).pref || {};
+    const capTxt = { A: '零成本启动', B: '轻量投入', C: '可接受小额投入', D: '有预算投入' };
+    const aiTxt = { A: '暂未用过 AI', B: '会用通用大模型', C: '会用 AI 做基础产出', D: '能搭 AI 工作流' };
+    if (answers.q_capital && capTxt[answers.q_capital]) r.push(capTxt[answers.q_capital] + '，匹配轻启动要求');
+    if (answers.q_ai && prof.q_ai === answers.q_ai) r.push(aiTxt[answers.q_ai] + '，符合该类赛道的 AI 能力门槛');
+    if (answers.q_client === 'A' && cat !== 'content' && cat !== 'emo') r.push('偏好服务 B 端商家，对应该类核心客群');
+    if (answers.q_client === 'B' && (cat === 'content' || cat === 'emo')) r.push('偏好服务 C 端用户，匹配该类流量变现路径');
+    if (answers.q_income && ['C', 'D'].indexOf(answers.q_income) >= 0) r.push('预期月收益 ' + ({ C: '8-15k', D: '15k+' })[answers.q_income] + '，该类赛道可覆盖');
+    r.push('大类核心特点：零启动资金，AI 提效后单人产能显著提升，适合副业起步');
+    return r.slice(0, 4);
+  }
+  function finishInitial() {
+    consumeTestQuota();
+    if (state.user) reportEvent('test', state.user.name);
+    const cat = state.assess.cat;
+    state.lastInitialCat = cat;
+    const catObj = catById(cat);
+    const match = computeCategoryMatch(cat, state.assess.answers);
+    const reasons = buildInitialReasons(cat, state.assess.answers);
+    const sop = ASSESS.catSop[cat] || [];
+    const repCase = repCaseForCat(cat);
+    state.resultMode = 'initial';
+    renderInitialResult({ catObj: catObj, match: match, reasons: reasons, sop: sop, repCase: repCase });
+  }
+  function renderInitialResult(d) {
+    const caseHtml = d.repCase ? `
+      <div class="res-case">
+        <div class="res-case-head">${icon('book-open', 16)} 代表案例（${esc(d.repCase.cat)}）</div>
+        <div class="res-case-title">${esc(d.repCase.title)}</div>
+        <p class="res-case-meta">${esc(d.repCase.source || '')}</p>
+        <p class="res-case-result">${esc(d.repCase.result || '')}</p>
+      </div>` : '';
+    $('#result-intro').innerHTML = `
+      <div class="result-avatar">${icon('zap')}</div>
+      <p>初测完成！你最匹配的赛道大类是 <b>${esc(d.catObj.name)}</b>，综合匹配度 <b>${d.match}%</b>。</p>`;
+    $('#result-list').innerHTML = `
+      <article class="result-card cat-result">
+        <div class="result-head">
+          <div><div class="result-cat">${esc(d.catObj.name)}</div><h3 class="result-name">赛道大类匹配</h3></div>
+          <div class="match-ring" style="--p:${d.match}"><span>${d.match}<small>%</small></span><em>匹配度</em></div>
+        </div>
+        <div class="rc-concl"><b>匹配原因：</b></div>
+        <ul class="rc-reasons">${d.reasons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+        <div class="rc-sop">
+          <div class="rc-sop-h">${icon('rocket')} 通用落地 SOP（3 步）</div>
+          <ol class="sop-steps">${d.sop.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+        </div>
+        ${caseHtml}
+        <div class="result-btns">
+          <button class="btn btn-primary" id="initial-advanced">解锁进阶测评：精准匹配 1-2 个细分赛道 →</button>
+        </div>
+      </article>`;
+    const slot = $('#guest-hint-slot');
+    if (slot) { slot.innerHTML = guestTestHintHTML(); bindGuestHint(slot); }
+    const adv = $('#initial-advanced');
+    if (adv) adv.addEventListener('click', () => { if (canTakeAdvanced()) startAdvanced(); else openAdvancedGate(); });
+    showView('result');
+  }
+
+  /* —— 进阶：精准细分赛道匹配 —— */
+  function mapFields(answers, cat) {
+    const capMap = { A: '500', B: '3000', C: '10000', D: '10001' };
+    const aiMap = { A: '1', B: '2', C: '3', D: '4' };
+    const incMap = { A: '3000', B: '8000', C: '20000', D: '20001' };
+    const wmMap = { A: 'online', B: 'offline', C: 'hybrid' };
+    const riskMap = { 1: '1', 2: '2', 3: '2', 4: '3' };
+    const payMap = { 1: '1', 2: '2', 3: '6', 4: '6' };
+    const focusMap = { 1: 'easy', 2: 'stable', 3: 'income', 4: 'grow' };
+    const persMap = { 1: 'student', 2: 'student', 3: 'sidehustle', 4: 'midlife' };
+    const skillsByCat = { ai: ['dev', 'copy'], content: ['copy', 'video'], biz: ['copy', 'legal'], visual: ['design', 'copy'], local: ['copy', 'sales'], emo: ['copy', 'sales'], life: ['sales', 'dev'] };
+    const capital = capMap[answers.q_capital] || '3000';
+    const ai = aiMap[answers.q_ai] || '2';
+    const income = incMap[answers.q_income] || '8000';
+    const workmode = wmMap[answers.q_acq] || 'online';
+    const risk = riskMap[+answers.d_scale || 2] || '2';
+    const payback = payMap[+answers.d_paybackTol || 2] || '2';
+    const focus = focusMap[+answers.d_charge || 4] || 'grow';
+    const persona = persMap[+answers.d_exp || 2] || 'sidehustle';
+    const skills = (skillsByCat[cat] || []).slice();
+    if (+ai >= 3) skills.push('dev');
+    const resources = [];
+    const res = +answers.d_resources || 1;
+    if (res >= 2) resources.push('traffic');
+    if (res >= 3) resources.push('local');
+    return { persona: persona, capital: capital, risk: risk, skills: skills, resources: resources, ai: ai, workmode: workmode, income: income, payback: payback, focus: focus };
+  }
+  function rawTrackScore(track, f) {
+    const personaScore = track.target.includes(f.persona) ? 1 : 0.35;
+    const userSkills = f.skills.filter(v => v !== 'none');
+    const userRes = f.resources.filter(v => v !== 'none');
+    const skill = userSkills.length === 0 ? (track.skills.length === 0 ? 0.85 : 0.5)
+      : Math.min(1, 0.4 + 0.6 * (track.skills.filter(s => userSkills.includes(s)).length / userSkills.length));
+    const resource = userRes.length === 0 ? (track.resourcesIdeal.length === 0 ? 0.8 : 0.5)
+      : (track.resourcesIdeal.length === 0 ? 0.8 : Math.min(1, 0.4 + 0.6 * (track.resourcesIdeal.filter(r => userRes.includes(r)).length / track.resourcesIdeal.length)));
+    const income = Math.max(0.4, Math.min(1, ((track.incomeMin + track.incomeMax) / 2) / (+f.income || 8000)));
+    const payback = track.paybackMax <= +f.payback ? 1 : 0.5;
+    const ai = +f.ai >= track.aiReq ? 1 : 0.5 + 0.3 * (+f.ai / track.aiReq);
+    const wm = track.workMode === f.workmode ? 1 : 0.6;
+    let score = 40 * personaScore + 60 * (0.25 * skill + 0.15 * resource + 0.20 * income + 0.15 * payback + 0.15 * ai + 0.10 * wm);
+    return Math.min(99, Math.round(score));
+  }
+  function hintBonus(track, answers, cat) {
+    const hints = ASSESS.subtrackHints[cat] || {};
+    let hits = 0;
+    Object.keys(hints).forEach(qid => {
+      const chosen = answers[qid];
+      if (!chosen) return;
+      const map = hints[qid];
+      if (map && map[chosen] === track.id) hits++;
+    });
+    return Math.min(100, 50 + hits * 12.5);
+  }
+  function assessScoreTrack(track, answers, cat) {
+    const f = mapFields(answers, cat);
+    const base = rawTrackScore(track, f);
+    const hint = hintBonus(track, answers, cat);
+    const score = Math.round(0.65 * base + 0.35 * hint);
+    return Math.max(60, Math.min(99, score));
+  }
+  function computeTrackMatches(cat, answers) {
+    const pool = tracksOfCat(cat);
+    const scored = pool.map(t => ({ track: t, score: assessScoreTrack(t, answers, cat) }));
+    scored.sort((a, b) => b.score - a.score);
+    return [scored[0], scored[1]].filter(x => x && x.track);
+  }
+  function finishAdvanced() {
+    if (state.user) reportEvent('test', state.user.name);
+    const cat = state.assess.cat;
+    const catObj = catById(cat);
+    const matches = computeTrackMatches(cat, state.assess.answers);
+    state.resultMode = 'advanced';
+    renderAdvancedResult({ catObj: catObj, matches: matches });
+  }
+  function renderTrackResultCard(m, rank, catObj) {
+    const t = m.track;
+    const caseObj = repCaseForCat(catObj.id);
+    const tools = (t.tools && t.tools.length) ? t.tools : [];
+    const sop = (t.coldStart && t.coldStart.length) ? t.coldStart : ['先做 1 个样例', '免费服务 3 个客户攒案例', '定价收费放大'];
+    return `<article class="result-card track-result">
+      <div class="result-rank">${rank}</div>
+      <div class="result-head">
+        <div><div class="result-cat">${esc(t.cat)}</div><h3 class="result-name">${esc(t.name)}</h3></div>
+        <div class="match-ring" style="--p:${m.score}"><span>${m.score}<small>%</small></span><em>匹配度</em></div>
+      </div>
+      <div class="rc-tags"><span class="tag tag-ok">${esc(t.friendly || '')}</span><span class="tag tag-ai">${esc(t.paybackSpeed || '')}</span><span class="tag">${esc(t.paybackLabel || '')}回本</span></div>
+      <div class="rc-step"><span class="rc-step-ico">${icon('arrow-right')}</span><div><b>匹配结论：</b>${esc(t.friendly || '')}、${esc(t.paybackSpeed || '')}，适合作为你的精准起步方向。</div></div>
+      <div class="rc-sop">
+        <div class="rc-sop-h">${icon('rocket')} 落地 SOP</div>
+        <ol class="sop-steps">${sop.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+      </div>
+      ${caseObj ? `<div class="res-case">
+        <div class="res-case-head">${icon('book-open', 16)} 对应真实案例</div>
+        <div class="res-case-title">${esc(caseObj.title)}</div>
+        <p class="res-case-result">${esc(caseObj.result || '')}</p>
+      </div>` : ''}
+      <div class="rc-tools">
+        <div class="rc-tools-h">${icon('tool')} 配套工具包清单</div>
+        <div class="tool-list">${tools.map(o => `<div class="tool-item"><b>${esc(o.name)}</b><span>${esc(o.desc)}</span></div>`).join('')}</div>
+      </div>
+      <div class="result-btns">
+        <button class="btn btn-primary" data-track="${t.id}">查看「${esc(t.name)}」完整详情 →</button>
+      </div>
+    </article>`;
+  }
+  function renderAdvancedResult(d) {
+    const cards = d.matches.map((m, i) => renderTrackResultCard(m, i === 0 ? 'TOP 1' : 'TOP 2', d.catObj));
+    const pitfalls = ASSESS.catPitfalls[d.catObj.id] || [];
+    const action = ASSESS.catAction[d.catObj.id] || [];
+    $('#result-intro').innerHTML = `
+      <div class="result-avatar">${icon('sparkle')}</div>
+      <p>进阶测评完成！基于你的深度作答，为你精准匹配 <b>${d.matches.length}</b> 个最优细分赛道（${esc(d.catObj.name)}）。</p>`;
+    $('#result-list').innerHTML = cards.join('') + `
+      <div class="adv-extra">
+        <div class="adv-block">
+          <div class="adv-h">${icon('alert-triangle')} 赛道避坑指南（3 个常见踩坑点）</div>
+          <ul class="adv-list">${pitfalls.map(p => `<li>${esc(p)}</li>`).join('')}</ul>
+        </div>
+        <div class="adv-block">
+          <div class="adv-h">${icon('check')} 启动行动清单（本周可直接做 3 件事）</div>
+          <ul class="adv-list">${action.map(a => `<li>${esc(a)}</li>`).join('')}</ul>
+        </div>
+      </div>`;
+    const slot = $('#guest-hint-slot');
+    if (slot) { slot.innerHTML = guestTestHintHTML(); bindGuestHint(slot); }
+    $$('#result-list [data-track]').forEach(b =>
+      b.addEventListener('click', () => openDetail(b.dataset.track, false)));
+    showView('result');
   }
 
   /* ====================== 匹配结果（4 模块结构） ====================== */
@@ -1114,7 +1402,7 @@ ${summary}
     if (slot) { slot.innerHTML = guestTestHintHTML(); bindGuestHint(slot); }
     $$('#result-list [data-track]').forEach(b =>
       b.addEventListener('click', () => { if (b.hasAttribute('data-locked')) openMembership(); else openDetail(b.dataset.track, false); }));
-    $$('#result-list [data-continue]').forEach(b => b.addEventListener('click', continueStage2));
+    /* 旧「补充 6 题」逻辑已移除：新测评改为初测/进阶两段独立流程 */
     $$('#result-list [data-benefit]').forEach(b => b.addEventListener('click', openMembership));
     showView('result');
   }
@@ -1158,13 +1446,7 @@ ${summary}
       <button class="member-link" type="button" data-benefit>${icon('crown', 15)} <span>查看「${t.name}」对应会员权益</span></button>
     </article>`;
   }
-  function continueStage2() {
-    state.quizStage = 2; state.quizStep = 0; startQuizFromStage2();
-  }
-  function startQuizFromStage2() {
-    state.mode = 'quiz'; state.quizStage = 2; state.quizStep = 0;
-    renderStage(); showView('quiz');
-  }
+  /* 旧两阶问卷的 continueStage2 / startQuizFromStage2 已由新测评引擎取代（见上方） */
 
   /* ====================== 赛道详情（付费锁） ====================== */
   function openDetail(trackId) {
@@ -1217,7 +1499,7 @@ ${summary}
   /* ====================== 会员开通 ====================== */
   function openMembership() {
     syncMembership();  // 打开弹窗时同步一次，确保后台开通后即时显示
-    $('#member-grid').innerHTML = PLANS.map(p => `
+    $('#member-grid').innerHTML = PLANS.filter(p => !p.advOnly).map(p => `
       <div class="plan-card ${p.highlight ? 'plan-hot' : ''} ${state.membership === p.id ? 'plan-current' : ''}">
         ${p.highlight ? '<div class="plan-badge">最受欢迎</div>' : ''}
         ${state.membership === p.id ? '<div class="plan-badge plan-badge-ok">当前套餐</div>' : ''}
@@ -1234,6 +1516,12 @@ ${summary}
   function closeMembership() { $('#member-modal').classList.remove('open'); setModuleActive(getCurrentView()); }
   function pickPlan(plan) {
     if (plan === 'free') { closeMembership(); return; }
+    if (plan === 'advanced') {
+      // 进阶测评：单次付费解锁，不走会员包月流程
+      if (!requireRegister(() => openPay('advanced'))) return;
+      openPay('advanced');
+      return;
+    }
     if (!requireRegister(() => pickPlan(plan))) return;
     openPay(plan);   // 点击会员 → 跳转支付页（展示收款码）
   }
@@ -1293,7 +1581,12 @@ ${summary}
       const body = $('#pay-body'), succ = $('#pay-success');
       if (body) body.style.display = 'none';
       if (succ) { succ.innerHTML = succHTML(true); succ.style.display = ''; }
-      toast('申请已提交，请按提示联系客服开通 🎁');
+      if (plan === 'advanced') {
+        try { localStorage.setItem('opc_advanced_unlock', '1'); } catch (e) {}
+        toast('🎯 进阶测评已解锁，去「开始测评」即可做精准测！');
+      } else {
+        toast('申请已提交，请按提示联系客服开通 🎁');
+      }
     } catch (e) {
       const body = $('#pay-body'), succ = $('#pay-success');
       if (body) body.style.display = 'none';

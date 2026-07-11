@@ -5,9 +5,13 @@ node_modules/
 .env
 
 # 运行时数据：部署到云平台后会重新种子化；
-# 如需长期保存用户/订单/支付配置，请在平台上挂载「持久化卷」并设 DATA_DIR 指向该卷路径。
-data/store.json
-data/views.json
+# 含 admin 密码、用户/订单/支付配置，切勿提交；
+# 如需长期保存，请在平台上挂载「持久化卷」并设 DATA_DIR 指向该卷路径。
+data/
+
+# 本地一次性部署/隧道脚本（含敏感信息，切勿提交）
+deploy-opc-oneline.txt
+persist-tunnel-oneline.txt
 
 # 本仓库的本地交付说明文档（非部署所需，保持仓库整洁）
 overview-*.md

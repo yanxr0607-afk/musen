@@ -520,6 +520,13 @@ const PLANS = [
     cta: '免费开始'
   },
   {
+    id: 'advanced', name: '进阶测评解锁', price: '¥9.9', period: ' 一次性',
+    highlight: false, target: '单次解锁 20 题精准测评，不占用每日免费次数',
+    benefits: ['20 题精准测评', '1-2 个细分赛道 + 匹配度', '4 步落地 SOP + 案例 + 工具包'],
+    cta: '解锁进阶测评',
+    advOnly: true
+  },
+  {
     id: 'basic', name: '基础版', price: '9.9 元', period: '/ 月',
     highlight: false, target: '新手试水用户，走量为主',
     benefits: ['无限次匹配测试', '全部赛道详情', '基础案例库', '合规模板包'],

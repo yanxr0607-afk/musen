@@ -435,6 +435,57 @@ button { font-family: inherit; cursor: pointer; }
 .rc-donts p { font-size: 13px; color: rgba(248,113,113,.9); margin: 3px 0; }
 .result-card-full { grid-column: span 1; }
 
+/* ====================== 新测评：分级选择 + 结果 ====================== */
+.level-chooser { display: flex; flex-direction: column; gap: 20px; }
+.lc-head { text-align: center; }
+.lc-head .quiz-q { margin-bottom: 6px; }
+.lc-sub { font-size: 14px; color: var(--muted); margin: 0; }
+.lc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+.lc-card { background: var(--surface); border: 1.5px solid var(--line); border-radius: 20px; padding: 26px 24px; display: flex; flex-direction: column; gap: 12px; cursor: pointer; transition: .2s; position: relative; }
+.lc-card:hover, .lc-card:focus-visible { transform: translateY(-4px); border-color: var(--primary); box-shadow: var(--shadow-lg); outline: none; }
+.lc-initial { background: linear-gradient(160deg, rgba(99,102,241,.12), rgba(34,211,238,.06)); }
+.lc-advanced { background: linear-gradient(160deg, rgba(167,139,250,.14), rgba(99,102,241,.06)); }
+.lc-locked { opacity: .96; }
+.lc-badge { align-self: flex-start; font-size: 12px; font-weight: 800; padding: 5px 12px; border-radius: 999px; }
+.lc-free { background: rgba(52,211,153,.16); color: var(--ok); }
+.lc-ok { background: rgba(52,211,153,.18); color: var(--ok); }
+.lc-pay { background: rgba(251,191,36,.16); color: var(--warn); }
+.lc-ico { width: 54px; height: 54px; border-radius: 16px; background: var(--primary-soft); color: var(--primary-d); display: grid; place-items: center; }
+.lc-ico .ico { width: 30px; height: 30px; }
+.lc-card h3 { font-size: 20px; font-weight: 800; margin: 0; }
+.lc-tag { font-size: 13.5px; color: var(--muted); margin: 0; line-height: 1.5; }
+.lc-points { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 7px; }
+.lc-points li { font-size: 13.5px; color: var(--muted); padding-left: 22px; position: relative; line-height: 1.5; }
+.lc-points li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--accent); font-weight: 800; }
+.lc-btn { margin-top: auto; justify-content: center; }
+
+/* 初测/进阶 结果卡补充 */
+.rc-reasons { list-style: none; padding: 0; margin: 0 0 14px; display: flex; flex-direction: column; gap: 8px; }
+.rc-reasons li { font-size: 14px; color: var(--muted); padding-left: 20px; position: relative; line-height: 1.5; }
+.rc-reasons li::before { content: ""; position: absolute; left: 3px; top: 8px; width: 5px; height: 5px; border-radius: 1px; background: var(--accent); transform: rotate(45deg); }
+.rc-sop { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+.rc-sop-h { font-size: 14px; font-weight: 800; color: var(--primary-d); display: flex; align-items: center; gap: 7px; margin-bottom: 10px; }
+.rc-sop-h .ico { width: 17px; height: 17px; }
+.sop-steps { list-style: none; padding: 0; margin: 0; counter-reset: sop; display: flex; flex-direction: column; gap: 9px; }
+.sop-steps li { counter-increment: sop; padding-left: 32px; position: relative; font-size: 14px; color: var(--ink); line-height: 1.5; }
+.sop-steps li::before { content: counter(sop); position: absolute; left: 0; top: 1px; width: 22px; height: 22px; background: var(--grad); color: #fff; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; }
+.res-case { background: linear-gradient(135deg, rgba(34,211,238,.10), rgba(99,102,241,.06)); border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+.res-case-head { font-size: 13px; font-weight: 800; color: var(--accent); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.res-case-head .ico { width: 15px; height: 15px; }
+.res-case-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.res-case-meta { font-size: 12px; color: var(--muted); margin: 0 0 6px; }
+.res-case-result { font-size: 13.5px; color: var(--muted); margin: 0; line-height: 1.6; }
+.rc-tools { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+.rc-tools-h { font-size: 14px; font-weight: 800; color: var(--primary-d); display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+.rc-tools-h .ico { width: 17px; height: 17px; }
+.adv-extra { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; margin-top: 4px; }
+.adv-block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
+.adv-h { font-size: 15px; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.adv-h .ico { width: 18px; height: 18px; color: var(--warn); }
+.adv-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 9px; }
+.adv-list li { font-size: 14px; color: var(--muted); padding-left: 22px; position: relative; line-height: 1.55; }
+.adv-list li::before { content: "•"; position: absolute; left: 4px; top: 0; color: var(--primary-d); font-weight: 800; }
+
 /* 详情页三件套 / 避坑 */
 .three { display: flex; flex-direction: column; gap: 8px; }
 .three li { font-size: 14px; color: var(--muted); padding-left: 18px; position: relative; }
