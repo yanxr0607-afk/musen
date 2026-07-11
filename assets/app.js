@@ -481,35 +481,41 @@
     });
   }
 
-  /* ====================== 首页真实案例跑马灯 ====================== */
+  /* ====================== 首页真实案例跑马灯（固定 3 条 · 新闻闪播式换批） ====================== */
   let tickerOffset = 0;
-  function buildTickerSeq(offset) {
+  let tickerTimer = null;
+  function buildTickerSeq(offset, count) {
     const cases = (window.__BUNDLE_CASES || window.CASES || []);
     if (!cases.length) return '';
     const n = cases.length;
     let html = '';
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < count; i++) {
       const c = cases[(offset + i) % n];
       html += `<span class="ticker-item"><span class="tnum">#${c.id}</span>${esc(c.title)}</span>`;
     }
     return html;
   }
   function renderCaseTicker() {
-    const track = document.getElementById('ticker-track');
+    const batch = document.getElementById('ticker-batch');
     const wrap = document.getElementById('home-ticker');
-    if (!track || !wrap) return;
+    if (!batch || !wrap) return;
     const cases = (window.__BUNDLE_CASES || window.CASES || []);
     if (!cases.length) { wrap.style.display = 'none'; return; }
     tickerOffset = 0;
-    const seq = buildTickerSeq(tickerOffset);
-    track.innerHTML = seq + seq; // 复制一份实现 -50% 无缝循环
-    track.style.animationDuration = Math.max(22, cases.length * 1.1) + 's';
-    // 每滚完一圈，整体推进 3 条，实现「不断更新 3 条」的滚动播报
-    track.onanimationiteration = () => {
+    batch.className = 'ticker-batch';
+    batch.innerHTML = buildTickerSeq(tickerOffset, 3);
+    // 每 4.5s 整体换下一批 3 条，带缓慢滑入滑出过渡
+    if (tickerTimer) clearInterval(tickerTimer);
+    tickerTimer = setInterval(() => {
       tickerOffset = (tickerOffset + 3) % cases.length;
-      const s = buildTickerSeq(tickerOffset);
-      track.innerHTML = s + s;
-    };
+      batch.classList.add('tick-out');
+      setTimeout(() => {
+        batch.innerHTML = buildTickerSeq(tickerOffset, 3);
+        batch.classList.remove('tick-out');
+        void batch.offsetWidth; // 强制回流，重放入场动画
+        batch.classList.add('tick-in');
+      }, 420);
+    }, 4500);
   }
 
   /* ====================== 模式选择 ====================== */
