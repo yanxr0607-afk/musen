@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>OPC 决策官 · 一人公司 AI 赛道决策官</title>
+<meta name="description" content="不用盲猜。10 道题初测定方向，20 道题锁定精准赛道，附落地 SOP 与真人验证过的真实案例。OPC 决策官帮你把「我想创业」变成「我知道怎么创」。" />
+<style>
+  :root {
+    --bg: #070A12;
+    --panel: #0B0F1A;
+    --panel-2: #0E1320;
+    --ink: #EAEFFB;
+    --muted: #98A4BC;
+    --faint: #5C6781;
+    --line: rgba(148,163,210,.13);
+    --line-2: rgba(148,163,210,.24);
+    --accent: #22D3EE;
+    --indigo: #6366F1;
+    --violet: #A78BFA;
+    --grad: linear-gradient(120deg, var(--indigo), var(--accent));
+    --radius: 18px;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif;
+    --maxw: 1120px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* 克制的背景气场：两束极淡的渐变 + 细网格，不做发光污染 */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(1100px 620px at 82% -8%, rgba(99,102,241,.16), transparent 60%),
+      radial-gradient(820px 480px at -6% 4%, rgba(34,211,238,.09), transparent 55%);
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(148,163,210,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148,163,210,.035) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(120% 80% at 50% 0%, #000, transparent 78%);
+    mask-image: radial-gradient(120% 80% at 50% 0%, #000, transparent 78%);
+  }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  /* ---------- 导航 ---------- */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(14px);
+    background: rgba(7,10,18,.72);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; height: 66px; }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand .mark {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: var(--grad); display: grid; place-items: center;
+    font-weight: 900; font-size: 15px; color: #06121a; letter-spacing: -.03em;
+    box-shadow: 0 6px 18px rgba(34,211,238,.25);
+  }
+  .brand .name { font-weight: 800; font-size: 16px; letter-spacing: -.01em; }
+  .brand .sub { font-size: 11.5px; color: var(--muted); font-weight: 500; margin-top: -2px; }
+  .nav-links { display: flex; align-items: center; gap: 30px; }
+  .nav-links a { font-size: 14.5px; color: var(--muted); font-weight: 600; transition: color .2s; }
+  .nav-links a:hover { color: var(--ink); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-weight: 700; font-size: 15px; border: none; cursor: pointer;
+    padding: 12px 22px; border-radius: 12px; transition: transform .15s, box-shadow .2s, background .2s;
+    font-family: inherit;
+  }
+  .btn-primary { background: var(--grad); color: #06121a; box-shadow: 0 10px 28px rgba(34,211,238,.22); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 38px rgba(34,211,238,.32); }
+  .btn-ghost { background: rgba(255,255,255,.05); color: var(--ink); border: 1px solid var(--line-2); }
+  .btn-ghost:hover { background: rgba(255,255,255,.09); transform: translateY(-2px); }
+  .nav-cta { padding: 10px 18px; font-size: 14px; }
+  .menu-btn { display: none; background: none; border: 1px solid var(--line-2); border-radius: 10px; width: 42px; height: 40px; color: var(--ink); cursor: pointer; }
+  .menu-btn span { display: block; width: 18px; height: 2px; background: var(--ink); margin: 3px auto; border-radius: 2px; }
+
+  /* ---------- Hero ---------- */
+  .hero { padding: clamp(56px, 9vw, 120px) 0 clamp(40px, 5vw, 64px); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); padding: 7px 14px; border-radius: 999px;
+    background: rgba(34,211,238,.08); border: 1px solid rgba(34,211,238,.26);
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  h1.hero-h {
+    font-size: clamp(2.4rem, 6.4vw, 4.6rem);
+    line-height: 1.1; letter-spacing: -.025em; font-weight: 850;
+    margin: 26px 0 0; max-width: 16ch;
+  }
+  h1.hero-h .hl {
+    background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-sub {
+    margin: 26px 0 0; max-width: 54ch; font-size: clamp(15px, 1.7vw, 18px);
+    color: var(--muted); font-weight: 450;
+  }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 36px; }
+  .hero-cta .btn { padding: 15px 28px; font-size: 16px; }
+
+  /* 数据条 */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    margin-top: clamp(48px, 6vw, 76px);
+    background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden;
+  }
+  .stat { background: var(--panel); padding: 26px 24px; }
+  .stat b { display: block; font-size: clamp(26px, 3.2vw, 38px); font-weight: 850; letter-spacing: -.02em;
+    background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 13px; color: var(--muted); margin-top: 4px; display: block; }
+
+  /* ---------- 通用 section ---------- */
+  section.block { padding: clamp(56px, 8vw, 104px) 0; }
+  .sec-head { max-width: 60ch; margin-bottom: clamp(34px, 4vw, 52px); }
+  .sec-kicker { font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .sec-title { font-size: clamp(1.7rem, 3.8vw, 2.7rem); line-height: 1.18; letter-spacing: -.02em; font-weight: 820; margin: 14px 0 0; }
+  .sec-desc { color: var(--muted); margin: 16px 0 0; font-size: 16px; max-width: 56ch; }
+
+  /* 能力卡 */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 30px 28px; transition: transform .25s, border-color .25s, background .25s;
+    position: relative; overflow: hidden;
+  }
+  .card:hover { transform: translateY(-4px); border-color: var(--line-2); background: var(--panel-2); }
+  .card .ico { width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center;
+    background: rgba(34,211,238,.10); border: 1px solid rgba(34,211,238,.3); color: var(--accent); font-size: 22px; margin-bottom: 20px; }
+  .card h3 { font-size: 19px; font-weight: 780; margin: 0 0 10px; letter-spacing: -.01em; }
+  .card p { color: var(--muted); font-size: 14.5px; margin: 0; }
+  .card .tag { display: inline-block; margin-top: 16px; font-size: 12.5px; font-weight: 700; color: var(--accent);
+    padding: 4px 11px; border-radius: 999px; background: rgba(34,211,238,.07); border: 1px solid rgba(34,211,238,.2); }
+
+  /* 真实案例 — 编辑式列表 */
+  .cases { display: flex; flex-direction: column; gap: 14px; }
+  .case {
+    display: grid; grid-template-columns: 88px 1fr auto; gap: 24px; align-items: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px 28px; transition: border-color .25s, transform .2s, background .25s;
+  }
+  .case:hover { border-color: var(--line-2); transform: translateX(4px); background: var(--panel-2); }
+  .case .no { font-size: 30px; font-weight: 850; letter-spacing: -.03em; line-height: 1;
+    background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .case .ct { font-size: 17px; font-weight: 700; letter-spacing: -.01em; line-height: 1.4; }
+  .case .cm { font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+  .case .src { font-size: 12.5px; color: var(--faint); white-space: nowrap; font-weight: 600; }
+  .case .src::before { content: "来源 · "; color: var(--line-2); }
+
+  /* 信任 / 会员 */
+  .cta-final {
+    background: linear-gradient(135deg, rgba(99,102,241,.16), rgba(34,211,238,.06));
+    border: 1px solid var(--line-2); border-radius: 26px;
+    padding: clamp(40px, 6vw, 72px); text-align: center; position: relative; overflow: hidden;
+  }
+  .cta-final h2 { font-size: clamp(1.9rem, 4.6vw, 3.2rem); line-height: 1.15; letter-spacing: -.025em; font-weight: 850; margin: 0; }
+  .cta-final p { color: var(--muted); margin: 18px auto 0; max-width: 48ch; font-size: 16px; }
+  .cta-final .price { display: inline-flex; align-items: baseline; gap: 8px; margin: 28px 0 30px; }
+  .cta-final .price b { font-size: 44px; font-weight: 850; letter-spacing: -.02em;
+    background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .cta-final .price span { color: var(--muted); font-weight: 600; }
+
+  footer { border-top: 1px solid var(--line); padding: 40px 0; color: var(--faint); font-size: 13.5px; }
+  .foot-in { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; align-items: center; }
+  .foot-in a { color: var(--muted); }
+  .foot-in a:hover { color: var(--ink); }
+
+  /* 进场动效 */
+  .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width: 860px) {
+    .nav-links { display: none; }
+    .menu-btn { display: block; }
+    .nav-links.open {
+      display: flex; position: absolute; top: 66px; left: 0; right: 0; flex-direction: column; gap: 0;
+      background: rgba(7,10,18,.97); border-bottom: 1px solid var(--line); padding: 10px 24px 20px;
+    }
+    .nav-links.open a { padding: 13px 0; border-bottom: 1px solid var(--line); }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .cards { grid-template-columns: 1fr; }
+    .case { grid-template-columns: 56px 1fr; gap: 16px; padding: 20px; }
+    .case .no { font-size: 24px; }
+    .case .src { grid-column: 2; margin-top: 8px; }
+  }
+  @media (max-width: 460px) {
+    .stats { grid-template-columns: 1fr; }
+    .hero-cta .btn { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="./" aria-label="OPC 决策官 首页">
+      <span class="mark">OP</span>
+      <span>
+        <span class="name">OPC 决策官</span>
+        <span class="sub">一人公司 AI 赛道决策官</span>
+      </span>
+    </a>
+    <nav class="nav-links" id="navLinks">
+      <a href="#ability">核心能力</a>
+      <a href="#cases">真实案例</a>
+      <a href="#member">会员</a>
+      <a class="btn btn-primary nav-cta" href="./">免费开始</a>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="菜单" aria-expanded="false"><span></span><span></span><span></span></button>
+  </div>
+</header>
+
+<main>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow reveal"><span class="dot"></span>ONE-PERSON COMPANY · AI 赛道决策官</span>
+      <h1 class="hero-h reveal">不用盲猜，<br>用 AI 找到你最该做的<span class="hl">一人公司赛道</span></h1>
+      <p class="hero-sub reveal">10 道题初测定方向，20 道题锁定精准赛道。每一步都附落地 SOP 与真人验证过的真实案例——把「我想创业」变成「我知道怎么创」。</p>
+      <div class="hero-cta reveal">
+        <a class="btn btn-primary" href="./">免费测评 · 10 题定方向 →</a>
+        <a class="btn btn-ghost" href="#cases">看看真实案例</a>
+      </div>
+
+      <div class="stats reveal">
+        <div class="stat"><b data-count="8000" data-suffix="亿">0</b><span>一人公司市场规模</span></div>
+        <div class="stat"><b data-count="32" data-suffix="">0</b><span>精选赛道维度</span></div>
+        <div class="stat"><b data-count="13" data-suffix="+">0</b><span>权威报道真实案例</span></div>
+        <div class="stat"><b data-count="10" data-suffix="×" data-prefix="≤">0</b><span>AI 提效单人产能</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 核心能力 -->
+  <section class="block" id="ability">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-kicker">核心能力</div>
+        <h2 class="sec-title">三件事，把方向想清楚</h2>
+        <p class="sec-desc">不是给你一堆鸡汤，是给你可执行的结论：匹配哪个赛道、怎么起步、避开哪些坑。</p>
+      </div>
+      <div class="cards">
+        <div class="card reveal">
+          <div class="ico">💬</div>
+          <h3>对话式 AI 顾问</h3>
+          <p>像和专属创业顾问聊天。3 个问题、1 分钟出结果：匹配结论 + 落地三件套 + 避坑红线。库里没有的赛道，AI 也能即时生成调研卡。</p>
+          <span class="tag">混元大模型驱动</span>
+        </div>
+        <div class="card reveal">
+          <div class="ico">🎯</div>
+          <h3>两段式赛道测评</h3>
+          <p>初测 10 题（免费）锁定大类与匹配度；进阶 20 题（¥9.9）精准定位 1–2 个细分方向，附结构化落地 SOP 与真实案例。</p>
+          <span class="tag">初测免费 · 进阶 ¥9.9</span>
+        </div>
+        <div class="card reveal">
+          <div class="ico">📚</div>
+          <h3>真实案例库</h3>
+          <p>新华网、人民网等公开报道的单人公司实战：背景、打法、结果、关键洞察。照着做，少走两年弯路。</p>
+          <span class="tag">权威来源 · 持续更新</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 真实案例 -->
+  <section class="block" id="cases" style="background:rgba(255,255,255,.015);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <div class="sec-kicker">真实案例</div>
+        <h2 class="sec-title">他们已经用一人公司跑通了</h2>
+        <p class="sec-desc">不是虚构的成功学。下方案例均来自公开报道，你可以顺着来源去核对。</p>
+      </div>
+      <div class="cases">
+        <a class="case reveal" href="./">
+          <span class="no">01</span>
+          <span><span class="ct">95 后程序员单人做 AI 作文工具：上线 4 个月拿下 1.5 万用户</span>
+          <span class="cm">AI 写 80% 代码，自己只抓产品方向，全程 0 员工。</span></span>
+          <span class="src">新华网</span>
+        </a>
+        <a class="case reveal" href="./">
+          <span class="no">10</span>
+          <span><span class="ct">带 5 万块南下，1 人公司年营收超 4000 万</span>
+          <span class="cm">AI 接管上架、投流、客服，投产比翻 2.4 倍。</span></span>
+          <span class="src">经济参考网</span>
+        </a>
+        <a class="case reveal" href="./">
+          <span class="no">08</span>
+          <span><span class="ct">95 后海归开「一人设计公司」：不招全职，拿下美术馆级订单</span>
+          <span class="cm">剧组式协作，轻资产反做高毛利。</span></span>
+          <span class="src">上观新闻</span>
+        </a>
+        <a class="case reveal" href="./">
+          <span class="no">03</span>
+          <span><span class="ct">00 后 48 小时上线 2 个 AI 网站，验证需求只用一周</span>
+          <span class="cm">先快速上线验证，跑通再迭代，试错成本近零。</span></span>
+          <span class="src">中国日报网</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 会员 / 收尾 CTA -->
+  <section class="block" id="member">
+    <div class="wrap">
+      <div class="cta-final reveal">
+        <h2>你的赛道，10 题就知道。</h2>
+        <p>注册后每日免费体验 3 次智能测评。开通会员，解锁全部赛道的精准测评、落地 SOP 与完整案例库。</p>
+        <div class="price"><b>¥9.9</b><span>/ 月 · 解锁全部精准赛道</span></div>
+        <div>
+          <a class="btn btn-primary" href="./" style="padding:15px 32px;font-size:16px;">免费开始测评 →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <span>OPC 决策官 · 一人公司 AI 赛道决策官</span>
+    <span>案例数据来源：新华网 · 人民网 · 经济参考网 · 中国日报网等公开报道</span>
+  </div>
+</footer>
+
+<script>
+  // 移动端菜单
+  const menuBtn = document.getElementById('menuBtn');
+  const navLinks = document.getElementById('navLinks');
+  menuBtn.addEventListener('click', () => {
+    const open = navLinks.classList.toggle('open');
+    menuBtn.setAttribute('aria-expanded', String(open));
+  });
+  navLinks.querySelectorAll('a').forEach(a => a.addEventListener('click', () => navLinks.classList.remove('open')));
+
+  // 进场动效
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reveals = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) {
+    reveals.forEach(el => el.classList.add('in'));
+  } else {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.14 });
+    reveals.forEach(el => io.observe(el));
+  }
+
+  // 数字滚动
+  const counters = document.querySelectorAll('[data-count]');
+  function runCounter(el) {
+    const target = parseFloat(el.dataset.count);
+    const suffix = el.dataset.suffix || '';
+    const prefix = el.dataset.prefix || '';
+    if (reduce) { el.textContent = prefix + target + suffix; return; }
+    const dur = 1300; const t0 = performance.now();
+    function tick(now) {
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = prefix + Math.round(target * eased) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  if ('IntersectionObserver' in window) {
+    const co = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { runCounter(e.target); co.unobserve(e.target); } });
+    }, { threshold: 0.6 });
+    counters.forEach(el => co.observe(el));
+  } else {
+    counters.forEach(runCounter);
+  }
+</script>
+</body>
+</html>
