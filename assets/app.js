@@ -1,7 +1,7 @@
 /* =========================================================================
  * OPC 一人公司赛道选型 SaaS（AI增强·双模式版）—— 前端应用逻辑
  * 模式一：对话框式 AI 顾问（3 轮出结果，引流）
- * 模式二：问卷式精准测评（分两阶：快速 6 题 + 精准 6 题，付费转化）
+ * 模式二：两段式赛道测评（初测 10 题 + 进阶 20 题，付费转化）
  * ========================================================================= */
 (function () {
   'use strict';
@@ -1395,7 +1395,7 @@ ${summary}
   function renderResult() {
     const quick = state.resultMode === 'quick';
     $('#result-intro').innerHTML = quick
-      ? `<div class="result-avatar">${icon('zap')}</div><p>快速测评完成！基于你的核心条件，先给你 <b>3 个</b> 高匹配赛道；<b>补充 6 题</b> 可解锁更精准的完整启动报告。</p>`
+      ? `<div class="result-avatar">${icon('zap')}</div><p>初测完成！已为你锁定最匹配的赛道大类与匹配度；<b>升级进阶测评</b>可解锁 1–2 个精准细分赛道及完整落地 SOP。</p>`
       : `<div class="result-avatar">${icon('target')}</div><p>完整测评完成！结合你的全部条件，为你生成 <b>3 个</b> 最优赛道与 30 天落地方案。</p>`;
     $('#result-list').innerHTML = state.results.map((r, i) => renderResultCard(r, i, quick)).join('');
     const slot = $('#guest-hint-slot');
@@ -1422,7 +1422,7 @@ ${summary}
         <div class="rc-step"><span class="rc-step-ico">${icon('arrow-right')}</span><div><b>第一步：</b>${t.coldStart[0]}</div></div>
         <div class="result-btns">
           <button class="btn btn-primary" data-track="${t.id}">查看详情</button>
-          <button class="btn btn-ghost" data-continue>补充 6 题 · 解锁完整报告 →</button>
+          <button class="btn btn-ghost" data-continue>升级进阶测评 · 解锁精准赛道 →</button>
         </div>
         <button class="member-link" type="button" data-benefit>${icon('crown', 15)} <span>查看「${t.name}」对应会员权益</span></button>
       </article>`;
