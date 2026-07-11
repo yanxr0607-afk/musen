@@ -1076,7 +1076,7 @@ ${summary}
         </div>
         <div class="lc-grid">
           <div class="lc-card lc-initial" id="lc-initial" role="button" tabindex="0">
-            <span class="lc-badge lc-free">免费 · 引流钩子</span>
+            <span class="lc-badge lc-free">免费体验</span>
             <div class="lc-ico">${icon('target', 30)}</div>
             <h3>初测（10 题）</h3>
             <p class="lc-tag">赛道大类 + 匹配度 + 通用 SOP + 代表案例</p>
