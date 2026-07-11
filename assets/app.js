@@ -481,6 +481,37 @@
     });
   }
 
+  /* ====================== 首页真实案例跑马灯 ====================== */
+  let tickerOffset = 0;
+  function buildTickerSeq(offset) {
+    const cases = (window.__BUNDLE_CASES || window.CASES || []);
+    if (!cases.length) return '';
+    const n = cases.length;
+    let html = '';
+    for (let i = 0; i < n; i++) {
+      const c = cases[(offset + i) % n];
+      html += `<span class="ticker-item"><span class="tnum">#${c.id}</span>${esc(c.title)}</span>`;
+    }
+    return html;
+  }
+  function renderCaseTicker() {
+    const track = document.getElementById('ticker-track');
+    const wrap = document.getElementById('home-ticker');
+    if (!track || !wrap) return;
+    const cases = (window.__BUNDLE_CASES || window.CASES || []);
+    if (!cases.length) { wrap.style.display = 'none'; return; }
+    tickerOffset = 0;
+    const seq = buildTickerSeq(tickerOffset);
+    track.innerHTML = seq + seq; // 复制一份实现 -50% 无缝循环
+    track.style.animationDuration = Math.max(22, cases.length * 1.1) + 's';
+    // 每滚完一圈，整体推进 3 条，实现「不断更新 3 条」的滚动播报
+    track.onanimationiteration = () => {
+      tickerOffset = (tickerOffset + 3) % cases.length;
+      const s = buildTickerSeq(tickerOffset);
+      track.innerHTML = s + s;
+    };
+  }
+
   /* ====================== 模式选择 ====================== */
   function openChatMode() {
     if (!enterTestGuard()) return;
@@ -1787,7 +1818,7 @@ ${summary}
   /* ====================== 初始化 ====================== */
   function init() {
     mountIcons();
-    renderHome(); renderBanner(); renderStepper(0);
+    renderHome(); renderBanner(); renderStepper(0); renderCaseTicker();
     $('#mode-chat').addEventListener('click', openChatMode);
     $('#mode-quiz').addEventListener('click', startQuiz);
     $('#hero-start').addEventListener('click', startQuiz);
@@ -1813,6 +1844,11 @@ ${summary}
     $('#home-daily').addEventListener('click', openDaily);
     $('#cases-home').addEventListener('click', goHome);
     $('#home-cases').addEventListener('click', openCases);
+    const tk = $('#home-ticker');
+    if (tk) {
+      tk.addEventListener('click', openCases);
+      tk.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCases(); } });
+    }
     $('#cases-shuffle').addEventListener('click', renderCases);
     const ci = $('#chat-input');
     $('#chat-send').addEventListener('click', sendChat);
