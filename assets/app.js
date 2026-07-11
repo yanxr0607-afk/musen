@@ -503,14 +503,16 @@
     if (!cases.length) { wrap.style.display = 'none'; return; }
     tickerOffset = 0;
     batch.className = 'ticker-batch';
-    batch.innerHTML = buildTickerSeq(tickerOffset, 3);
-    // 每 4.5s 整体换下一批 3 条，带缓慢滑入滑出过渡
+    // 桌面端 3 条一排、手机端 1 条，切换步长与条数一致保证不漏案例
+    const getCount = () => window.matchMedia('(max-width: 560px)').matches ? 1 : 3;
+    const paint = () => { batch.innerHTML = buildTickerSeq(tickerOffset, getCount()); };
+    paint();
     if (tickerTimer) clearInterval(tickerTimer);
     tickerTimer = setInterval(() => {
-      tickerOffset = (tickerOffset + 3) % cases.length;
+      tickerOffset = (tickerOffset + getCount()) % cases.length;
       batch.classList.add('tick-out');
       setTimeout(() => {
-        batch.innerHTML = buildTickerSeq(tickerOffset, 3);
+        paint();
         batch.classList.remove('tick-out');
         void batch.offsetWidth; // 强制回流，重放入场动画
         batch.classList.add('tick-in');
