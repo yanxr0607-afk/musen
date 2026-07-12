@@ -620,6 +620,10 @@
     const finalKw = isIntl ? (kw || '').replace(/^兼职/, '') : (kw || '');
     return tpl.replace('{q}', encodeURIComponent(finalKw));
   }
+  function isIntlPlat(p) {
+    const key = (_PLAT_ALIAS[p] || p);
+    return (typeof INTL_PLATFORMS !== 'undefined' && !!INTL_PLATFORMS[key]);
+  }
   function platHasLink(p) {
     const key = (_PLAT_ALIAS[p] || p);
     return typeof PLATFORM_SEARCH !== 'undefined' && !!PLATFORM_SEARCH[key];
@@ -633,8 +637,9 @@
     const MK_PLAT_MAX = 10;
     const mkPlatTag = (p) => {
       const href = platSearchHref(p, kw);
-      if (!href) return `<span class="mk-plat">${esc(p)}</span>`;
-      return `<a class="mk-plat mk-plat--link" href="${href}" target="_blank" rel="noopener noreferrer" title="去 ${esc(p)} 搜「${esc(kw)}」相关单子">${esc(p)} ↗</a>`;
+      const intlMark = isIntlPlat(p) ? '<i class="intl-badge" title="国际平台">国际站</i>' : '';
+      if (!href) return `<span class="mk-plat">${esc(p)}${intlMark}</span>`;
+      return `<a class="mk-plat mk-plat--link" href="${href}" target="_blank" rel="noopener noreferrer" title="去 ${esc(p)}（国际平台）搜「${esc(kw)}」相关单子">${esc(p)} ↗${intlMark}</a>`;
     };
     const platTags = m.platforms.slice(0, MK_PLAT_MAX).map(mkPlatTag).join('')
       + (m.platforms.length > MK_PLAT_MAX
@@ -663,8 +668,9 @@
     const platTag = (x, p) => {
       const kw = '兼职' + (x.topTrack || x.cat);
       const href = platSearchHref(p, kw);
-      if (!href) return '<span class="mk-plat">' + esc(p) + '</span>';
-      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗</a>';
+      const intlMark = isIntlPlat(p) ? '<i class="intl-badge" title="国际平台">国际站</i>' : '';
+      if (!href) return '<span class="mk-plat">' + esc(p) + intlMark + '</span>';
+      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + '（国际平台）搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗' + intlMark + '</a>';
     };
     el.innerHTML = list.map(x => `
       <article class="mk-overview-card">
@@ -685,8 +691,9 @@
     const platTag = (t, p) => {
       const kw = '兼职' + ((typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name);   // 精准短词，而非过长赛道名
       const href = platSearchHref(p, kw);
-      if (!href) return '<span class="to-plat">' + esc(p) + '</span>';
-      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗</a>';
+      const intlMark = isIntlPlat(p) ? '<i class="intl-badge" title="国际平台">国际站</i>' : '';
+      if (!href) return '<span class="to-plat">' + esc(p) + intlMark + '</span>';
+      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + '（国际平台）搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗' + intlMark + '</a>';
     };
     const sorted = tracks.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
     el.innerHTML = sorted.map(t => {

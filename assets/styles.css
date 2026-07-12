@@ -808,6 +808,19 @@ button { font-family: inherit; cursor: pointer; }
   transition: all var(--transition-fast, .15s);
 }
 .to-plat--link:hover { background: var(--accent); color: #04222A; transform: translateY(-1px); box-shadow: var(--shadow); }
+/* 国际平台标记徽章（国际站） */
+.intl-badge {
+  display: inline-flex; align-items: center; margin-left: 5px;
+  font-style: normal; font-weight: 700; line-height: 1;
+  padding: 1px 6px; border-radius: 999px;
+  font-size: 10px; letter-spacing: .2px; vertical-align: middle;
+  color: #0E7490; background: rgba(14,116,140,.14);
+  border: 1px solid rgba(14,116,140,.35);
+}
+.to-plat .intl-badge { font-size: 11px; padding: 2px 7px; }
+[data-theme="dark"] .intl-badge {
+  color: #67E8F9; background: rgba(103,232,249,.16); border-color: rgba(103,232,249,.4);
+}
 /* 接单渠道「展开全部」折叠（原生 details，零 JS 风险） */
 .to-plats-more { width: 100%; margin-top: 4px; }
 .to-plats-more > summary {
