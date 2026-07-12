@@ -74,6 +74,7 @@
     currentTrack: null,
     caseFilter: 'all',
     membership: loadMembership(),
+    advancedUnlocked: false,   // 进阶测评解锁状态：以后端 /api/user/profile 为准，前端不自授权
     user: loadUser(),
     pendingAction: null,
     chatHasResult: false,
@@ -124,6 +125,12 @@
         renderHome();
         toast('🎉 会员状态已更新：' + (PLANS.find(p => p.id === serverMem) || {}).name);
         console.log('[sync] membership changed: ' + prev + ' → ' + serverMem);
+      }
+      const serverAdv = !!res.advancedUnlocked;
+      if (serverAdv !== state.advancedUnlocked) {
+        state.advancedUnlocked = serverAdv;
+        if (serverAdv) toast('🎯 进阶测评已开通，去「开始测评」即可做精准测！');
+        if (document.getElementById('lc-advanced')) renderLevelChooser();
       }
     } catch(e) { /* 离线或后端不可达时静默 */ }
   }
@@ -602,7 +609,7 @@
   function clientSystemPrompt() {
     const summary = liveTracks().map(t =>
       `- ${t.name}（id:${t.id}｜分类:${t.cat}｜启动${t.capital}元起｜月收益${t.incomeMin}-${t.incomeMax}元｜${t.friendly}）`).join('\n');
-    return `你是"OPC 一人公司赛道选型顾问"。我们已经收录了以下赛道：
+    return `你是"不做牛马 · 一人公司赛道选型顾问"。我们已经收录了以下赛道：
 ${summary}
 
 任务：用户会用一段话描述自己的情况和想做的方向。请严格只输出 JSON，格式如下：
@@ -1086,8 +1093,9 @@ ${summary}
     return cases.find(c => db.includes(c.cat)) || cases[0] || null;
   }
   function canTakeAdvanced() {
-    if (isUnlocked()) return true;
-    try { return localStorage.getItem('opc_advanced_unlock') === '1'; } catch (e) { return false; }
+    if (isUnlocked()) return true;            // 付费会员直接可测进阶
+    // 非会员：解锁状态完全由后端确认（synced via syncMembership），前端不本地自授权
+    return !!state.advancedUnlocked;
   }
   function buildInitialSeq(cat) {
     const spec = ASSESS.specific[cat] || ASSESS.specific[Object.keys(ASSESS.specific)[0]] || [];
@@ -1620,12 +1628,11 @@ ${summary}
       const body = $('#pay-body'), succ = $('#pay-success');
       if (body) body.style.display = 'none';
       if (succ) { succ.innerHTML = succHTML(true); succ.style.display = ''; }
-      if (plan === 'advanced') {
-        try { localStorage.setItem('opc_advanced_unlock', '1'); } catch (e) {}
-        toast('🎯 进阶测评已解锁，去「开始测评」即可做精准测！');
-      } else {
-        toast('申请已提交，请按提示联系客服开通 🎁');
-      }
+      // 不再本地直接解锁：解锁以「后端核实付款」为准，前端通过 syncMembership 轮询生效
+      syncMembership();
+      toast(plan === 'advanced'
+        ? '🎯 进阶测评开通申请已提交，客服核实付款后自动解锁'
+        : '申请已提交，请按提示联系客服开通 🎁');
     } catch (e) {
       const body = $('#pay-body'), succ = $('#pay-success');
       if (body) body.style.display = 'none';

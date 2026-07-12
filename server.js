@@ -63,7 +63,7 @@ const trackSummary = TRACKS.map(t =>
 ).join('\n');
 
 function systemPrompt() {
-  return `你是"OPC 一人公司赛道选型顾问"。我们已经收录了以下赛道：
+  return `你是"不做牛马 · 一人公司赛道选型顾问"。我们已经收录了以下赛道：
 ${trackSummary}
 
 任务：用户会用一段话描述自己的情况和想做的方向。请严格只输出 JSON，格式如下：
@@ -329,7 +329,7 @@ function loadStore() {
       memberships: PLANS.map(p => ({ id: p.id, name: p.name, price: p.price, period: p.period, feats: p.feats || [], cta: p.cta || '开通' })),
       orders: [],
       settings: {
-        siteName: 'OPC 一人公司赛道选型',
+        siteName: '不做牛马 · 一人公司赛道选型',
         banner: { enabled: false, slides: [] },
         popup: { enabled: false, once: true, trigger: 'load', title: '', content: '', btnText: '', btnLink: '' },
         ai: { opening: '', examples: [], systemExtra: '' },
@@ -378,7 +378,7 @@ async function handleRegister(req, res) {
   let u = s.users.find(x => x.name === name);
   if (!u) {
     u = { id: 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-          name, membership: b.membership || 'free', testUsed: 0, registeredAt: Date.now(), lastActive: Date.now() };
+          name, membership: b.membership || 'free', advancedUnlocked: false, testUsed: 0, registeredAt: Date.now(), lastActive: Date.now() };
     s.users.push(u);
   } else {
     if (b.membership && b.membership !== 'none') u.membership = b.membership;
@@ -566,7 +566,11 @@ async function handlePay(req, res) {
   if (o.status === 'paid') return sendJSON(res, 200, { ok: true, order: o });
   o.status = 'paid'; o.paidAt = Date.now();
   const u = s.users.find(x => x.name === o.user);
-  if (u) { u.membership = o.plan; u.lastActive = Date.now(); }
+  if (u) {
+    if (o.plan === 'advanced') u.advancedUnlocked = true;   // 进阶测为单次解锁，不写入会员等级
+    else u.membership = o.plan;
+    u.lastActive = Date.now();
+  }
   saveStore();
   return sendJSON(res, 200, { ok: true, order: o });
 }
@@ -604,7 +608,9 @@ async function handleAdminSetMembership(req, res) {
   const s = loadStore();
   const u = s.users.find(x => x.name === name);
   if (!u) return sendJSON(res, 404, { error: 'no user' });
-  u.membership = membership; u.lastActive = Date.now();
+  if (membership === 'advanced') u.advancedUnlocked = true;   // 进阶测单次解锁
+  else u.membership = membership;
+  u.lastActive = Date.now();
   saveStore();
   return sendJSON(res, 200, { ok: true, user: u });
 }
@@ -619,6 +625,10 @@ async function handleAdminOrderStatus(req, res) {
   if (!o) return sendJSON(res, 404, { error: 'no order' });
   o.status = status;
   if ((status === 'paid' || status === 'done') && !o.paidAt) o.paidAt = Date.now();
+  if ((status === 'paid' || status === 'done') && o.plan === 'advanced') {
+    const u = s.users.find(x => x.name === o.user);
+    if (u) u.advancedUnlocked = true;
+  }
   saveStore();
   return sendJSON(res, 200, { ok: true, order: o });
 }
@@ -742,7 +752,7 @@ function handleUserProfile(req, res) {
   const s = loadStore();
   const u = s.users.find(x => x.name === name);
   if (!u) return sendJSON(res, 200, { ok: true, membership: null });     // 未注册
-  return sendJSON(res, 200, { ok: true, membership: u.membership || 'free', name: u.name });
+  return sendJSON(res, 200, { ok: true, membership: u.membership || 'free', name: u.name, advancedUnlocked: !!u.advancedUnlocked });
 }
 
     /* 公开内容 / 上报 */
