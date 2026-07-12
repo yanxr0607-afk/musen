@@ -808,6 +808,29 @@ button { font-family: inherit; cursor: pointer; }
   transition: all var(--transition-fast, .15s);
 }
 .to-plat--link:hover { background: var(--accent); color: #04222A; transform: translateY(-1px); box-shadow: var(--shadow); }
+/* 接单渠道「展开全部」折叠（原生 details，零 JS 风险） */
+.to-plats-more { width: 100%; margin-top: 4px; }
+.to-plats-more > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12.5px; font-weight: 600; color: var(--accent);
+  padding: 4px 2px; border-radius: 8px;
+}
+.to-plats-more > summary::-webkit-details-marker { display: none; }
+.to-plats-more > summary::before { content: '▸'; font-size: 11px; transition: transform .2s; }
+.to-plats-more[open] > summary::before { transform: rotate(90deg); }
+.to-plats-more[open] > summary { margin-bottom: 8px; }
+.to-plats-rest { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 4px; border-top: 1px dashed var(--line); }
+.mk-plats-more { margin-top: 6px; }
+.mk-plats-more > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 600; color: var(--accent); padding: 3px 2px;
+}
+.mk-plats-more > summary::-webkit-details-marker { display: none; }
+.mk-plats-more > summary::before { content: '▸'; font-size: 10px; transition: transform .2s; }
+.mk-plats-more[open] > summary::before { transform: rotate(90deg); }
+.mk-plats-rest { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; margin-top: 4px; border-top: 1px dashed var(--line); }
 .to-foot { margin-top: 16px; font-size: 12px; color: var(--muted); opacity: .82; text-align: center; line-height: 1.6; }
 @media (max-width: 640px) {
   .take-order-grid { grid-template-columns: 1fr; }

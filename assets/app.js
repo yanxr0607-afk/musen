@@ -615,7 +615,10 @@
     const key = (_PLAT_ALIAS[p] || p);
     const tpl = (typeof PLATFORM_SEARCH !== 'undefined' && PLATFORM_SEARCH[key]) ? PLATFORM_SEARCH[key] : null;
     if (!tpl) return null;
-    return tpl.replace('{q}', encodeURIComponent(kw || ''));
+    // 国际平台不套「兼职」前缀，直接用精准词（避免中文「兼职」混入英文检索）
+    const isIntl = (typeof INTL_PLATFORMS !== 'undefined' && INTL_PLATFORMS[key]);
+    const finalKw = isIntl ? (kw || '').replace(/^兼职/, '') : (kw || '');
+    return tpl.replace('{q}', encodeURIComponent(finalKw));
   }
   function platHasLink(p) {
     const key = (_PLAT_ALIAS[p] || p);
@@ -627,11 +630,16 @@
     const priceTxt = (m.pMin && m.pMax) ? `${fmtMoney(m.pMin)} ~ ${fmtMoney(m.pMax)}/月` : (t.income || '—');
     // 「接单平台」行：有搜索入口的变成可点击链接（按该品类下收益最高的精准赛道搜索），无入口的保留为普通标签
     const kw = '兼职' + (m.topTrack || m.cat);
-    const platTags = m.platforms.map(p => {
+    const MK_PLAT_MAX = 10;
+    const mkPlatTag = (p) => {
       const href = platSearchHref(p, kw);
       if (!href) return `<span class="mk-plat">${esc(p)}</span>`;
-      return `<a class="mk-plat mk-plat--link" href="${href}" target="_blank" rel="noopener noreferrer" title="去 ${esc(p)} 查看相关远程接单 / 兼职机会">${esc(p)} ↗</a>`;
-    }).join('');
+      return `<a class="mk-plat mk-plat--link" href="${href}" target="_blank" rel="noopener noreferrer" title="去 ${esc(p)} 搜「${esc(kw)}」相关单子">${esc(p)} ↗</a>`;
+    };
+    const platTags = m.platforms.slice(0, MK_PLAT_MAX).map(mkPlatTag).join('')
+      + (m.platforms.length > MK_PLAT_MAX
+        ? `<details class="mk-plats-more"><summary>展开全部 ${m.platforms.length} 个接单渠道</summary><div class="mk-plats-rest">${m.platforms.slice(MK_PLAT_MAX).map(mkPlatTag).join('')}</div></details>`
+        : '');
     const hasJobLinks = m.platforms.some(p => platHasLink(p));
     const caseItems = m.cases.slice(0, 3).map(c => {
       const oneLine = (c.result || '').split('。')[0] + '。';
@@ -656,7 +664,7 @@
       const kw = '兼职' + (x.topTrack || x.cat);
       const href = platSearchHref(p, kw);
       if (!href) return '<span class="mk-plat">' + esc(p) + '</span>';
-      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 查看相关远程接单 / 兼职机会">' + esc(p) + ' ↗</a>';
+      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗</a>';
     };
     el.innerHTML = list.map(x => `
       <article class="mk-overview-card">
@@ -672,18 +680,23 @@
   function renderTakeOrderBoard() {
     const el = document.getElementById('take-order-grid');
     if (!el) return;
+    const TO_PLAT_MAX = 12;
     const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
     const platTag = (t, p) => {
       const kw = '兼职' + ((typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name);   // 精准短词，而非过长赛道名
       const href = platSearchHref(p, kw);
       if (!href) return '<span class="to-plat">' + esc(p) + '</span>';
-      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 查看相关远程接单 / 兼职机会">' + esc(p) + ' ↗</a>';
+      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗</a>';
     };
     const sorted = tracks.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
     el.innerHTML = sorted.map(t => {
       const incomeTxt = (t.incomeMin && t.incomeMax) ? (fmtMoney(t.incomeMin) + ' ~ ' + fmtMoney(t.incomeMax) + '/月') : (t.income || '—');
       const plats = (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[t.cat]) ? PLATFORMS_BY_CAT[t.cat] : [];
       const kw = '兼职' + ((typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name);
+      const shown = plats.slice(0, TO_PLAT_MAX).map(p => platTag(t, p)).join('');
+      const rest = (plats.length > TO_PLAT_MAX)
+        ? `<details class="to-plats-more"><summary>展开全部 ${plats.length} 个接单渠道</summary><div class="to-plats-rest">${plats.slice(TO_PLAT_MAX).map(p => platTag(t, p)).join('')}</div></details>`
+        : '';
       return `<article class="to-card">
         <div class="to-head">
           <span class="to-cat">${esc(t.cat)}</span>
@@ -692,7 +705,7 @@
         <div class="to-income"><span class="to-income-label">预估月收益</span><b>${incomeTxt}</b></div>
         <div class="to-plats-wrap">
           <div class="to-plats-label">接单平台 · 关键词「${esc(kw)}」</div>
-          <div class="to-plats">${plats.map(p => platTag(t, p)).join('')}</div>
+          <div class="to-plats">${shown}${rest}</div>
         </div>
       </article>`;
     }).join('');

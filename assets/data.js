@@ -976,51 +976,99 @@ const CASES = [
  * 仅作接单渠道参考，不承诺收益
  * ----------------------------------------------------------------------- */
 const PLATFORMS_BY_CAT = {
-  'AI 原生服务类':   ['BOSS直聘', '前程无忧', '智联招聘', '猎聘', '掘金', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs'],
-  '本地商家赋能类': ['58同城', 'BOSS直聘', '智联招聘', '抖音', '百度', '搜狗', '360'],
-  '情绪陪伴经济类': ['BOSS直聘', '智联招聘', '闲鱼', '抖音', '百度', '搜狗', '360'],
-  '数字产品内容类': ['BOSS直聘', '猪八戒', '前程无忧', '闲鱼', '掘金', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs'],
-  '便民生活服务类': ['58同城', 'BOSS直聘', '智联招聘', '闲鱼', '百度', '搜狗', '360'],
-  '轻技术工具类':   ['前程无忧', 'BOSS直聘', '智联招聘', '猎聘', '掘金', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs'],
-  '内容生产变现类': ['BOSS直聘', '猪八戒', '智联招聘', '抖音', '掘金', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs'],
-  '企业服务提效类': ['BOSS直聘', '前程无忧', '智联招聘', '猪八戒', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs'],
-  '视觉设计生产类': ['猪八戒', 'BOSS直聘', '智联招聘', '闲鱼', '掘金', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs'],
+  'AI 原生服务类': ['BOSS直聘', '前程无忧', '智联招聘', '猎聘', '猪八戒', '闲鱼', '掘金', '抖音', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs', '圆领超级个体', '程序员客栈', '开源众包', '码市', '猿急送', '智城外包', '一品威客', '时间财富网', '稿定设计众包', 'Upwork', 'Fiverr', 'Freelancer', '99designs', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
+  '本地商家赋能类': ['58同城', 'BOSS直聘', '智联招聘', '抖音', '百度', '搜狗', '360', '美团众包', '蜂鸟众包', '达达快送', '顺丰同城急送', 'UU跑腿', '猪八戒', '一品威客', '时间财富网', '稿定设计众包', 'Upwork', 'Fiverr', 'Freelancer', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
+  '情绪陪伴经济类': ['BOSS直聘', '智联招聘', '闲鱼', '抖音', '百度', '搜狗', '360', '猪八戒', '一品威客', '时间财富网', '稿定设计众包', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs', '圆领超级个体', 'Upwork', 'Fiverr', 'Freelancer', '99designs', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
+  '数字产品内容类': ['BOSS直聘', '猪八戒', '前程无忧', '闲鱼', '掘金', '抖音', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs', '圆领超级个体', '程序员客栈', '开源众包', '码市', '猿急送', '智城外包', '一品威客', '时间财富网', '稿定设计众包', '站酷海洛', '千图网', '包图网', '昵图网', '米画师', 'Upwork', 'Fiverr', 'Freelancer', '99designs', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
+  '便民生活服务类': ['58同城', 'BOSS直聘', '智联招聘', '闲鱼', '百度', '搜狗', '360', '美团众包', '蜂鸟众包', '达达快送', '顺丰同城急送', 'UU跑腿', '猪八戒', '一品威客', '时间财富网', '稿定设计众包', 'Upwork', 'Fiverr', 'Freelancer', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
+  '轻技术工具类': ['前程无忧', 'BOSS直聘', '智联招聘', '猎聘', '掘金', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs', '圆领超级个体', '程序员客栈', '开源众包', '码市', '猿急送', '智城外包', '猪八戒', '一品威客', '时间财富网', '稿定设计众包', 'Upwork', 'Fiverr', 'Freelancer', '99designs', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
+  '内容生产变现类': ['BOSS直聘', '猪八戒', '智联招聘', '抖音', '掘金', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs', '圆领超级个体', '程序员客栈', '码市', '智城外包', '一品威客', '时间财富网', '稿定设计众包', '站酷海洛', '千图网', '包图网', '昵图网', '米画师', 'Upwork', 'Fiverr', 'Freelancer', '99designs', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
+  '企业服务提效类': ['BOSS直聘', '前程无忧', '智联招聘', '猪八戒', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs', '圆领超级个体', '程序员客栈', '开源众包', '码市', '猿急送', '智城外包', '一品威客', '时间财富网', '稿定设计众包', 'Upwork', 'Fiverr', 'Freelancer', '99designs', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
+  '视觉设计生产类': ['猪八戒', 'BOSS直聘', '智联招聘', '闲鱼', '掘金', '百度', '搜狗', '360', '电鸭社区', '码上工作', '云队友', '实现网', '远程.work', 'HKese', '小蜜蜂云工作', '甜薪工场', '云工网', 'Brix Labs', '圆领超级个体', '程序员客栈', '码市', '智城外包', '一品威客', '时间财富网', '稿定设计众包', '站酷海洛', '千图网', '包图网', '昵图网', '米画师', 'Upwork', 'Fiverr', 'Freelancer', '99designs', 'Remote OK', 'PeoplePerHour', 'Turing', '全国人社政务服务平台', '中国公共招聘网', '就业在线', '兼职猫', '斗米', '兼客兼职', '青团社', '店长直聘'],
 };
 
-/* 各接单 / 招聘平台的「公开搜索」直达链接（{q} 占位符会被「兼职+赛道精准词」替换）。
-   - 仅收录「专职招聘 / 接单众包」且网页按词搜索能命中结果、直接落到岗位列表页的平台；
-   - 58同城：网页搜索必须带城市子域名（无城市会落首页），现默认北京(bj)，需换城市改下方 bj 即可；
-   - 百度 / 搜狗 / 360：全网搜索聚合入口，按词跨站检索全网招聘 / 兼职信息，网页可达无登录墙；
-   - 小红书 / 公众号 / 知乎 / 站酷 / 淘宝 / 美团 / 兼职猫 / 斗米 等：社媒、内容平台或 App/登录墙，
-     网页无可靠关键词搜索入口，作为「参考渠道」仅展示为灰色标签、不生成跳转链接（避免点到空结果）。 */
+/* 各接单 / 招聘平台的「直达搜索」链接（{q} 占位符会被「精准关键词」替换）。
+   为保证【每次跳转都带上精准关键词】，分两类：
+   1) 原生关键词搜索：平台自身支持网页按词搜（BOSS / 前程无忧 / 智联 / 猎聘 / 58 / 猪八戒 / 闲鱼 / 抖音 / 掘金 / 国际站等），直接落岗位列表；
+   2) 浏览型平台：平台无通用关键词搜索入口（远程 / 威客 / 兼职 App / 跑腿 / 官方 / 设计类），
+      统一走「百度 site:域名 精准词」检索 —— 既保证跳转带精准关键词，又把结果限定在该平台站内，避免点到空页。
+   58同城：网页搜索必须带城市子域名（无城市会落首页），现默认北京(bj)，需换城市改下方 bj 即可。 */
 const PLATFORM_SEARCH = {
-  // —— 专职招聘平台（精准可跳转搜索，直接落岗位列表）——
+  // —— 专职招聘平台（原生关键词搜索，直接落岗位列表）——
   'BOSS直聘':  'https://www.zhipin.com/web/geek/job?query={q}',
   '前程无忧':   'https://search.51job.com/list/000000,000000,0000,00,9,99,{q},2,1.html',
   '智联招聘':   'https://www.zhaopin.com/sou?kw={q}',
   '猎聘':      'https://www.liepin.com/zhaopin/?key={q}',
   '58同城':    'https://bj.58.com/jianzhi/?key={q}',
-  // —— 接单 / 众包平台（精准可跳转搜索）——
+  // —— 接单 / 众包平台（原生关键词搜索）——
   '猪八戒':    'https://www.zbj.com/search?kw={q}',
   '闲鱼':      'https://www.goofish.com/search?q={q}',
-  // —— 内容 / 社媒发现渠道（可跳转，按赛道词检索；非招聘站，仅作参考）——
+  // —— 内容 / 社媒发现渠道（原生关键词检索，非招聘站仅作参考）——
   '抖音':      'https://www.douyin.com/search/{q}',
   '掘金':      'https://juejin.cn/search?query={q}',
-  // —— 全网搜索聚合（跨站检索全网招聘 / 兼职信息，网页可达、无登录墙）——
-  '百度':      'https://www.baidu.com/s?wd={q}',
-  '搜狗':      'https://www.sogou.com/web?query={q}',
-  '360':       'https://www.so.com/s?q={q}',
-  // —— 远程接单 / 自由职业平台（掘金《国内程序员远程工作平台合集》收录；跳转平台浏览，无关键词搜索）——
-  '电鸭社区':   'https://eleduck.com/',
-  'Brix Labs':  'https://zh.joinbrix.com/',
-  '小蜜蜂云工作': 'https://www.xmf.com/',
-  '云队友':     'https://www.duiyou360.com/',
-  '甜薪工场':   'https://www.txgc.com/',
-  '云工网':     'https://www.yungong.com/yuancheng',
-  '实现网':     'https://shixian.com/jobs',
-  '远程.work':  'https://yuancheng.work/',
-  'HKese':      'https://hkese.net/jobs',
-  '码上工作':   'https://open.nancheng.fun/remote/',
+  // —— 官方灵活就业平台（免费可靠，浏览型 → 百度站内检索）——
+  '全国人社政务服务平台': 'https://www.baidu.com/s?wd={q}%20site:12333.gov.cn',
+  '中国公共招聘网':     'https://www.baidu.com/s?wd={q}%20site:job.mohrss.gov.cn',
+  '就业在线':         'https://www.baidu.com/s?wd={q}%20site:jobonline.cn',
+  // —— 综合兼职平台（浏览型 → 百度站内检索）——
+  '兼职猫':   'https://www.baidu.com/s?wd={q}%20site:jianzhimao.com',
+  '斗米':     'https://www.baidu.com/s?wd={q}%20site:doumi.com',
+  '兼客兼职': 'https://www.baidu.com/s?wd={q}%20site:jianke.com',
+  '青团社':   'https://www.baidu.com/s?wd={q}%20site:qtshe.com',
+  '店长直聘': 'https://www.baidu.com/s?wd={q}%20site:dianzhangzhipin.com',
+  // —— 线下跑腿 / 众包配送（浏览型 → 百度站内检索）——
+  '美团众包':     'https://www.baidu.com/s?wd={q}%20site:zhongbao.meituan.com',
+  '蜂鸟众包':     'https://www.baidu.com/s?wd={q}%20site:fengniao.ele.me',
+  '达达快送':     'https://www.baidu.com/s?wd={q}%20site:dada.cn',
+  '顺丰同城急送': 'https://www.baidu.com/s?wd={q}%20site:sf-cityrush.com',
+  'UU跑腿':      'https://www.baidu.com/s?wd={q}%20site:uupt.com',
+  // —— 威客 / 综合技能众包（浏览型 → 百度站内检索；猪八戒为原生搜索见上）——
+  '一品威客':     'https://www.baidu.com/s?wd={q}%20site:epwk.com',
+  '时间财富网':   'https://www.baidu.com/s?wd={q}%20site:sikuu.com',
+  '稿定设计众包': 'https://www.baidu.com/s?wd={q}%20site:gaoding.com',
+  // —— 程序员 / 技术接单（浏览型 → 百度站内检索；实现网为原生见下）——
+  '程序员客栈': 'https://www.baidu.com/s?wd={q}%20site:proginn.com',
+  '开源众包':   'https://www.baidu.com/s?wd={q}%20site:zb.oschina.net',
+  '码市':       'https://www.baidu.com/s?wd={q}%20site:codemart.com',
+  '猿急送':     'https://www.baidu.com/s?wd={q}%20site:yuanjisong.com',
+  '智城外包':   'https://www.baidu.com/s?wd={q}%20site:taskcity.com',
+  // —— 远程工作 / 自由职业平台（浏览型 → 百度站内检索；原《国内程序员远程工作平台合集》收录）——
+  '电鸭社区':     'https://www.baidu.com/s?wd={q}%20site:eleduck.com',
+  'Brix Labs':    'https://www.baidu.com/s?wd={q}%20site:zh.joinbrix.com',
+  '小蜜蜂云工作': 'https://www.baidu.com/s?wd={q}%20site:xmf.com',
+  '云队友':       'https://www.baidu.com/s?wd={q}%20site:duiyou360.com',
+  '甜薪工场':     'https://www.baidu.com/s?wd={q}%20site:tianxinshe.com',
+  '云工网':       'https://www.baidu.com/s?wd={q}%20site:yungong.com',
+  '实现网':       'https://www.baidu.com/s?wd={q}%20site:shixian.com',
+  '远程.work':    'https://www.baidu.com/s?wd={q}%20site:yuancheng.work',
+  'HKese':        'https://www.baidu.com/s?wd={q}%20site:hkese.net',
+  '码上工作':     'https://www.baidu.com/s?wd={q}%20site:open.nancheng.fun',
+  '圆领超级个体': 'https://www.baidu.com/s?wd={q}%20site:superthem.com',
+  // —— 设计 / 创意类平台（浏览型 → 百度站内检索）——
+  '站酷海洛': 'https://www.baidu.com/s?wd={q}%20site:hellorf.com',
+  '千图网':   'https://www.baidu.com/s?wd={q}%20site:58pic.com',
+  '包图网':   'https://www.baidu.com/s?wd={q}%20site:ibaotu.com',
+  '昵图网':   'https://www.baidu.com/s?wd={q}%20site:nipic.com',
+  '米画师':   'https://www.baidu.com/s?wd={q}%20site:mihuashi.com',
+  // —— 国际自由职业平台（原生关键词搜索，自动去掉「兼职」前缀）——
+  'Upwork':     'https://www.upwork.com/nx/search/jobs/?q={q}',
+  'Fiverr':     'https://www.fiverr.com/search/gigs?query={q}',
+  'Freelancer': 'https://www.freelancer.com/jobs/?keyword={q}',
+  '99designs':  'https://99designs.com/search?q={q}',
+  'Remote OK':  'https://remoteok.com/remote-jobs?tag={q}',
+  // —— 国际平台（浏览型 → 百度站内检索，自动去掉「兼职」前缀）——
+  'PeoplePerHour': 'https://www.baidu.com/s?wd={q}%20site:peopleperhour.com',
+  'Turing':       'https://www.baidu.com/s?wd={q}%20site:turing.com',
+  // —— 全网搜索聚合（跨站检索全网招聘 / 兼职信息，网页可达无登录墙）——
+  '百度':   'https://www.baidu.com/s?wd={q}',
+  '搜狗':   'https://www.sogou.com/web?query={q}',
+  '360':    'https://www.so.com/s?q={q}',
+};
+
+/* 国际平台标记：跳转时自动去掉「兼职」前缀，避免中文「兼职」混入英文检索 */
+const INTL_PLATFORMS = {
+  'Upwork': 1, 'Fiverr': 1, 'Freelancer': 1, '99designs': 1,
+  'Remote OK': 1, 'PeoplePerHour': 1, 'Turing': 1,
 };
 
 /* 各赛道在接单平台的「精准搜索关键词」（短、口语化，贴近真实用户检索习惯）
