@@ -630,7 +630,7 @@
     const platTags = m.platforms.map(p => {
       const href = platSearchHref(p, kw);
       if (!href) return `<span class="mk-plat">${esc(p)}</span>`;
-      return `<a class="mk-plat mk-plat--link" href="${href}" target="_blank" rel="noopener noreferrer" title="去 ${esc(p)} 搜「${esc(kw)}」相关单子">${esc(p)} ↗</a>`;
+      return `<a class="mk-plat mk-plat--link" href="${href}" target="_blank" rel="noopener noreferrer" title="去 ${esc(p)} 查看相关远程接单 / 兼职机会">${esc(p)} ↗</a>`;
     }).join('');
     const hasJobLinks = m.platforms.some(p => platHasLink(p));
     const caseItems = m.cases.slice(0, 3).map(c => {
@@ -656,14 +656,14 @@
       const kw = '兼职' + (x.topTrack || x.cat);
       const href = platSearchHref(p, kw);
       if (!href) return '<span class="mk-plat">' + esc(p) + '</span>';
-      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」">' + esc(p) + ' ↗</a>';
+      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 查看相关远程接单 / 兼职机会">' + esc(p) + ' ↗</a>';
     };
     el.innerHTML = list.map(x => `
       <article class="mk-overview-card">
         <div class="mk-ov-cat">${esc(x.cat)}</div>
         <div class="mk-ov-price">${x.pMin && x.pMax ? fmtMoney(x.pMin) + ' ~ ' + fmtMoney(x.pMax) + '/月' : '—'}</div>
         <div class="mk-heat"><div class="mk-heat-bar"><i style="width:${x.heat}%"></i></div><span>热度 ${x.heat}</span></div>
-        <div class="mk-ov-plats">${x.platforms.slice(0, 4).map(p => platTag(x, p)).join('')}</div>
+        <div class="mk-ov-plats">${x.platforms.slice(0, 10).map(p => platTag(x, p)).join('')}</div>
         <div class="mk-ov-meta">${x.caseCount} 个真实案例 · ${x.trackCount} 条赛道</div>
       </article>`).join('');
   }
@@ -677,7 +677,7 @@
       const kw = '兼职' + ((typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name);   // 精准短词，而非过长赛道名
       const href = platSearchHref(p, kw);
       if (!href) return '<span class="to-plat">' + esc(p) + '</span>';
-      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗</a>';
+      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 查看相关远程接单 / 兼职机会">' + esc(p) + ' ↗</a>';
     };
     const sorted = tracks.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
     el.innerHTML = sorted.map(t => {
@@ -691,7 +691,7 @@
         </div>
         <div class="to-income"><span class="to-income-label">预估月收益</span><b>${incomeTxt}</b></div>
         <div class="to-plats-wrap">
-          <div class="to-plats-label">接单平台 · 搜「${esc(kw)}」</div>
+          <div class="to-plats-label">接单平台 · 关键词「${esc(kw)}」</div>
           <div class="to-plats">${plats.map(p => platTag(t, p)).join('')}</div>
         </div>
       </article>`;
