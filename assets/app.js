@@ -370,13 +370,22 @@
     renderHome(); showView('home');
   }
   /* 顶部 + 底部 TabBar 共用的导航逻辑 */
+  /* 滚动到指定板块，自动扣除吸顶导航高度，避免标题被导航条遮挡 */
+  function scrollToSection(el) {
+    if (!el) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const nav = document.querySelector('.nav');
+      const navH = nav ? nav.offsetHeight : 0;
+      const top = el.getBoundingClientRect().top + window.scrollY - navH - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }));
+  }
   function handleNav(go) {
     if (go === 'home') { goHome(); }
     else if (go === 'assess') {
       if (!$('#view-home').classList.contains('is-active')) showView('home');
       setModuleActive('assess');
-      const el = document.getElementById('section-modes');
-      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 60);
+      scrollToSection(document.getElementById('section-modes'));
     }
     else if (go === 'daily') { openDaily(); }
     else if (go === 'cases') { openCases(); }
@@ -384,8 +393,7 @@
     else if (go === 'takeorders') {
       if (!$('#view-home').classList.contains('is-active')) showView('home');
       setModuleActive('takeorders');
-      const el = document.getElementById('section-takeorders');
-      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 60);
+      scrollToSection(document.getElementById('section-takeorders'));
     }
   }
   function renderStepper(activeIdx) {
