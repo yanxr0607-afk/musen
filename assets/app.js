@@ -592,6 +592,7 @@
       const maxs = ts.map(t => t.incomeMax).filter(v => typeof v === 'number');
       const pMin = mins.length ? Math.min(...mins) : 0;
       const pMax = maxs.length ? Math.max(...maxs) : 0;
+      const tsByIncome = ts.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
       let heat = 62 + (caseCountByCat[cat] / maxCase) * 30 + Math.min(trackCountByCat[cat], 6);
       map[cat] = {
         cat,
@@ -600,6 +601,7 @@
         pMin, pMax,
         heat: Math.min(98, Math.round(heat)),
         platforms: (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[cat]) ? PLATFORMS_BY_CAT[cat] : [],
+        topTrack: tsByIncome.length ? (tsByIncome[0].search || tsByIncome[0].name) : cat,
         cases: cs.slice(0, 6),
         live: (_liveMarket && _liveMarket[cat]) ? _liveMarket[cat] : null,
       };
@@ -607,23 +609,30 @@
     _marketCache = map;
     return map;
   }
+  /* 平台别名归一 + 根据「精准赛道关键词」生成可跳转的搜索链接 */
+  const _PLAT_ALIAS = { '抖音本地生活': '抖音', '抖音本地': '抖音' };
+  function platSearchHref(p, kw) {
+    const key = (_PLAT_ALIAS[p] || p);
+    const tpl = (typeof PLATFORM_SEARCH !== 'undefined' && PLATFORM_SEARCH[key]) ? PLATFORM_SEARCH[key] : null;
+    if (!tpl) return null;
+    return tpl.replace('{q}', encodeURIComponent(kw || ''));
+  }
+  function platHasLink(p) {
+    const key = (_PLAT_ALIAS[p] || p);
+    return typeof PLATFORM_SEARCH !== 'undefined' && !!PLATFORM_SEARCH[key];
+  }
   function marketCardHTML(t) {
     const m = buildMarket()[t.cat];
     if (!m) return '';
     const priceTxt = (m.pMin && m.pMax) ? `${fmtMoney(m.pMin)} ~ ${fmtMoney(m.pMax)}/月` : (t.income || '—');
-    // 「接单平台」行：有搜索入口的变成可点击链接，无入口的保留为普通标签
-    const PLAT_ALIAS = { '抖音本地生活': '抖音', '抖音本地': '抖音' };
+    // 「接单平台」行：有搜索入口的变成可点击链接（按该品类下收益最高的精准赛道搜索），无入口的保留为普通标签
+    const kw = m.topTrack || m.cat;
     const platTags = m.platforms.map(p => {
-      const key = (PLAT_ALIAS[p] || p);
-      const tpl = (typeof PLATFORM_SEARCH !== 'undefined' && PLATFORM_SEARCH[key]) ? PLATFORM_SEARCH[key] : null;
-      if (!tpl) return `<span class="mk-plat">${esc(p)}</span>`;
-      const href = tpl.replace('{q}', encodeURIComponent(m.cat));
-      return `<a class="mk-plat mk-plat--link" href="${href}" target="_blank" rel="noopener noreferrer" title="去 ${esc(p)} 搜「${esc(m.cat)}」兼职">${esc(p)} ↗</a>`;
+      const href = platSearchHref(p, kw);
+      if (!href) return `<span class="mk-plat">${esc(p)}</span>`;
+      return `<a class="mk-plat mk-plat--link" href="${href}" target="_blank" rel="noopener noreferrer" title="去 ${esc(p)} 搜「${esc(kw)}」相关单子">${esc(p)} ↗</a>`;
     }).join('');
-    const hasJobLinks = m.platforms.some(p => {
-      const key = (PLAT_ALIAS[p] || p);
-      return typeof PLATFORM_SEARCH !== 'undefined' && !!PLATFORM_SEARCH[key];
-    });
+    const hasJobLinks = m.platforms.some(p => platHasLink(p));
     const caseItems = m.cases.slice(0, 3).map(c => {
       const oneLine = (c.result || '').split('。')[0] + '。';
       return `<li><span class="mk-ci-num">#${c.id}</span><span class="mk-ci-title">${esc(c.title)}</span><em>${esc(oneLine)}</em></li>`;
@@ -643,20 +652,18 @@
     const el = document.getElementById('market-overview');
     if (!el) return;
     const list = Object.values(buildMarket()).sort((a, b) => b.heat - a.heat);
-    const _PLAT_ALIAS = { '抖音本地生活': '抖音', '抖音本地': '抖音' };
-    const platTag = (cat, p) => {
-      const key = (_PLAT_ALIAS[p] || p);
-      const tpl = (typeof PLATFORM_SEARCH !== 'undefined' && PLATFORM_SEARCH[key]) ? PLATFORM_SEARCH[key] : null;
-      if (!tpl) return '<span class="mk-plat">' + esc(p) + '</span>';
-      const href = tpl.replace('{q}', encodeURIComponent(cat));
-      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(cat) + '」">' + esc(p) + ' ↗</a>';
+    const platTag = (x, p) => {
+      const kw = x.topTrack || x.cat;
+      const href = platSearchHref(p, kw);
+      if (!href) return '<span class="mk-plat">' + esc(p) + '</span>';
+      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」">' + esc(p) + ' ↗</a>';
     };
     el.innerHTML = list.map(x => `
       <article class="mk-overview-card">
         <div class="mk-ov-cat">${esc(x.cat)}</div>
         <div class="mk-ov-price">${x.pMin && x.pMax ? fmtMoney(x.pMin) + ' ~ ' + fmtMoney(x.pMax) + '/月' : '—'}</div>
         <div class="mk-heat"><div class="mk-heat-bar"><i style="width:${x.heat}%"></i></div><span>热度 ${x.heat}</span></div>
-        <div class="mk-ov-plats">${x.platforms.slice(0, 4).map(p => platTag(x.cat, p)).join('')}</div>
+        <div class="mk-ov-plats">${x.platforms.slice(0, 4).map(p => platTag(x, p)).join('')}</div>
         <div class="mk-ov-meta">${x.caseCount} 个真实案例 · ${x.trackCount} 条赛道</div>
       </article>`).join('');
   }
@@ -666,18 +673,17 @@
     const el = document.getElementById('take-order-grid');
     if (!el) return;
     const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
-    const _PLAT_ALIAS = { '抖音本地生活': '抖音', '抖音本地': '抖音' };
-    const platTag = (cat, p) => {
-      const key = (_PLAT_ALIAS[p] || p);
-      const tpl = (typeof PLATFORM_SEARCH !== 'undefined' && PLATFORM_SEARCH[key]) ? PLATFORM_SEARCH[key] : null;
-      if (!tpl) return '<span class="to-plat">' + esc(p) + '</span>';
-      const href = tpl.replace('{q}', encodeURIComponent(cat));
-      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(cat) + '」">' + esc(p) + ' ↗</a>';
+    const platTag = (t, p) => {
+      const kw = t.search || t.name;   // 精准到具体赛道名，而非宽泛大类
+      const href = platSearchHref(p, kw);
+      if (!href) return '<span class="to-plat">' + esc(p) + '</span>';
+      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗</a>';
     };
     const sorted = tracks.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
     el.innerHTML = sorted.map(t => {
       const incomeTxt = (t.incomeMin && t.incomeMax) ? (fmtMoney(t.incomeMin) + ' ~ ' + fmtMoney(t.incomeMax) + '/月') : (t.income || '—');
       const plats = (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[t.cat]) ? PLATFORMS_BY_CAT[t.cat] : [];
+      const kw = t.search || t.name;
       return `<article class="to-card">
         <div class="to-head">
           <span class="to-cat">${esc(t.cat)}</span>
@@ -685,8 +691,8 @@
         </div>
         <div class="to-income"><span class="to-income-label">预估月收益</span><b>${incomeTxt}</b></div>
         <div class="to-plats-wrap">
-          <div class="to-plats-label">接单平台</div>
-          <div class="to-plats">${plats.map(p => platTag(t.cat, p)).join('')}</div>
+          <div class="to-plats-label">接单平台 · 搜「${esc(kw)}」</div>
+          <div class="to-plats">${plats.map(p => platTag(t, p)).join('')}</div>
         </div>
       </article>`;
     }).join('');
