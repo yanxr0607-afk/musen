@@ -541,6 +541,19 @@
         _marketCache = null; // 重建以合并实时信号
         const ov = document.getElementById('market-overview');
         if (ov) renderMarketOverview();
+        // 若当前正在查看赛道详情，实时更新行情卡中的「实时需求信号」块
+        const db = document.getElementById('detail-body');
+        if (db && state.currentTrack) {
+          const mktEl = db.querySelector('.market-card');
+          if (mktEl) {
+            const fresh = marketCardHTML(state.currentTrack);
+            if (fresh) {
+              const tmp = document.createElement('div');
+              tmp.innerHTML = fresh;
+              mktEl.replaceWith(tmp.firstElementChild);
+            }
+          }
+        }
       }
     } catch (e) { /* 回退本地大库 */ }
   }
