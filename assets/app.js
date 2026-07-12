@@ -361,7 +361,7 @@
     return v ? v.id.replace('view-', '') : 'home';
   }
   function setModuleActive(view) {
-    const map = { home: 'home', chat: 'assess', quiz: 'assess', result: 'assess', detail: 'assess', tools: 'assess', daily: 'daily', cases: 'cases', member: 'member' };
+    const map = { home: 'home', chat: 'assess', quiz: 'assess', result: 'assess', detail: 'assess', tools: 'assess', daily: 'daily', cases: 'cases', member: 'member', takeorders: 'takeorders' };
     const active = map[view] || 'home';
     $$('.mnav-item, .tabbar-item').forEach(b => b.classList.toggle('active', b.dataset.go === active));
   }
@@ -381,6 +381,12 @@
     else if (go === 'daily') { openDaily(); }
     else if (go === 'cases') { openCases(); }
     else if (go === 'member') { openMembership(); }
+    else if (go === 'takeorders') {
+      if (!$('#view-home').classList.contains('is-active')) showView('home');
+      setModuleActive('takeorders');
+      const el = document.getElementById('section-takeorders');
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: 'auto', block: 'start' }), 60);
+    }
   }
   function renderStepper(activeIdx) {
     $('#stepper').innerHTML = STEPS.map((s, i) => {
