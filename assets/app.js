@@ -488,6 +488,7 @@
       c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
     });
     renderMarketOverview();
+    renderTakeOrderBoard();
   }
 
   /* ====================== 首页真实案例跑马灯（固定 3 条 · 新闻闪播式换批） ====================== */
@@ -644,6 +645,37 @@
         <div class="mk-ov-plats">${x.platforms.slice(0, 4).map(p => platTag(x.cat, p)).join('')}</div>
         <div class="mk-ov-meta">${x.caseCount} 个真实案例 · ${x.trackCount} 条赛道</div>
       </article>`).join('');
+  }
+
+  /* ====================== 首页「我想接单 · 接单直通车」 ====================== */
+  function renderTakeOrderBoard() {
+    const el = document.getElementById('take-order-grid');
+    if (!el) return;
+    const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
+    const _PLAT_ALIAS = { '抖音本地生活': '抖音', '抖音本地': '抖音' };
+    const platTag = (cat, p) => {
+      const key = (_PLAT_ALIAS[p] || p);
+      const tpl = (typeof PLATFORM_SEARCH !== 'undefined' && PLATFORM_SEARCH[key]) ? PLATFORM_SEARCH[key] : null;
+      if (!tpl) return '<span class="to-plat">' + esc(p) + '</span>';
+      const href = tpl.replace('{q}', encodeURIComponent(cat));
+      return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(cat) + '」">' + esc(p) + ' ↗</a>';
+    };
+    const sorted = tracks.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
+    el.innerHTML = sorted.map(t => {
+      const incomeTxt = (t.incomeMin && t.incomeMax) ? (fmtMoney(t.incomeMin) + ' ~ ' + fmtMoney(t.incomeMax) + '/月') : (t.income || '—');
+      const plats = (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[t.cat]) ? PLATFORMS_BY_CAT[t.cat] : [];
+      return `<article class="to-card">
+        <div class="to-head">
+          <span class="to-cat">${esc(t.cat)}</span>
+          <h3 class="to-name">${esc(t.name)}</h3>
+        </div>
+        <div class="to-income"><span class="to-income-label">预估月收益</span><b>${incomeTxt}</b></div>
+        <div class="to-plats-wrap">
+          <div class="to-plats-label">接单平台</div>
+          <div class="to-plats">${plats.map(p => platTag(t.cat, p)).join('')}</div>
+        </div>
+      </article>`;
+    }).join('');
   }
 
   /* ====================== 模式选择 ====================== */

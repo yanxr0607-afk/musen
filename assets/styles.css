@@ -783,3 +783,33 @@ button { font-family: inherit; cursor: pointer; }
 .mk-live-h { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 .mk-live-prices { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
 .mk-live-prices .mk-plat { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.35); color: var(--ok); }
+
+/* ============ 首页「我想接单 · 接单直通车」 ============ */
+.take-order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; margin-top: 8px; }
+.to-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; transition: .18s; }
+.to-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow); }
+.to-head { display: flex; flex-direction: column; gap: 6px; }
+.to-cat { font-size: 12px; color: var(--muted); }
+.to-name { font-size: 17px; font-weight: 800; color: var(--ink); line-height: 1.35; margin: 0; }
+.to-income { display: flex; align-items: baseline; gap: 8px; }
+.to-income-label { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.to-income b { font-size: 18px; font-weight: 800; color: var(--accent); }
+.to-plats-wrap { margin-top: auto; padding-top: 14px; border-top: 1px dashed var(--line-strong); }
+.to-plats-label { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 11px; display: flex; align-items: center; gap: 6px; }
+.to-plats-label::before { content: ''; width: 4px; height: 14px; border-radius: 2px; background: var(--accent); display: inline-block; }
+.to-plats { display: flex; flex-wrap: wrap; gap: 10px; }
+.to-plat {
+  font-size: 14px; font-weight: 600; padding: 9px 15px; border-radius: 11px;
+  background: var(--surface-2); border: 1px solid var(--line); color: var(--muted);
+}
+.to-plat--link {
+  text-decoration: none; cursor: pointer; color: var(--accent);
+  background: rgba(34,211,238,.10); border-color: rgba(34,211,238,.32);
+  transition: all var(--transition-fast, .15s);
+}
+.to-plat--link:hover { background: var(--accent); color: #04222A; transform: translateY(-1px); box-shadow: var(--shadow); }
+.to-foot { margin-top: 16px; font-size: 12px; color: var(--muted); opacity: .82; text-align: center; line-height: 1.6; }
+@media (max-width: 640px) {
+  .take-order-grid { grid-template-columns: 1fr; }
+  .to-name { font-size: 16px; }
+}
