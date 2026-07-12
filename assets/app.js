@@ -601,7 +601,7 @@
         pMin, pMax,
         heat: Math.min(98, Math.round(heat)),
         platforms: (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[cat]) ? PLATFORMS_BY_CAT[cat] : [],
-        topTrack: tsByIncome.length ? (tsByIncome[0].search || tsByIncome[0].name) : cat,
+        topTrack: tsByIncome.length ? ((typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[tsByIncome[0].id]) || tsByIncome[0].search || tsByIncome[0].name) : cat,
         cases: cs.slice(0, 6),
         live: (_liveMarket && _liveMarket[cat]) ? _liveMarket[cat] : null,
       };
@@ -674,7 +674,7 @@
     if (!el) return;
     const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
     const platTag = (t, p) => {
-      const kw = t.search || t.name;   // 精准到具体赛道名，而非宽泛大类
+      const kw = (typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name;   // 精准短词，而非过长赛道名
       const href = platSearchHref(p, kw);
       if (!href) return '<span class="to-plat">' + esc(p) + '</span>';
       return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗</a>';
@@ -683,7 +683,7 @@
     el.innerHTML = sorted.map(t => {
       const incomeTxt = (t.incomeMin && t.incomeMax) ? (fmtMoney(t.incomeMin) + ' ~ ' + fmtMoney(t.incomeMax) + '/月') : (t.income || '—');
       const plats = (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[t.cat]) ? PLATFORMS_BY_CAT[t.cat] : [];
-      const kw = t.search || t.name;
+      const kw = (typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name;
       return `<article class="to-card">
         <div class="to-head">
           <span class="to-cat">${esc(t.cat)}</span>

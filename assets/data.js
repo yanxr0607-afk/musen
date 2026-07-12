@@ -987,21 +987,59 @@ const PLATFORMS_BY_CAT = {
   '视觉设计生产类': ['站酷', '小红书', '淘宝', '闲鱼', '猪八戒'],
 };
 
-/* 各接单平台的「公开搜索」直达链接（{q} 占位符会被赛道大类名替换）。
-   - 仅收录有可用 Web 搜索入口的平台；私密渠道（微信私域 / 小区社群 / 独立站等）不在此列。
-   - 58同城等无通用搜索参数的，跳转官网首页由用户自行检索。 */
+/* 各接单平台的「公开搜索」直达链接（{q} 占位符会被赛道精准关键词替换）。
+   - 仅收录有可用 Web 搜索入口、且中文检索能命中结果的平台；私密渠道（微信私域 / 小区社群 / 独立站等）不在此列。
+   - 58同城等无通用搜索参数的，跳转官网首页由用户自行检索。
+   - ProductHunt 已移除：其为英文/全球榜，中文赛道词无法命中，保留只会点到空结果。 */
 const PLATFORM_SEARCH = {
   '闲鱼':       'https://www.goofish.com/search?q={q}',
   '抖音':       'https://www.douyin.com/search/{q}',
-  '小红书':     'https://www.xiaohongshu.com/search_result?q={q}',
-  '公众号':     'https://weixin.sogou.com/weixin?type=2&query={q}',
+  '小红书':     'https://www.xiaohongshu.com/search_result?keyword={q}',
+  '公众号':     'https://weixin.sogou.com/weixin?type=1&query={q}',
   '淘宝':       'https://s.taobao.com/search?q={q}',
   '知乎':       'https://www.zhihu.com/search?q={q}&type=content',
-  'ProductHunt':'https://www.producthunt.com/search?q={q}',
   '掘金':       'https://juejin.cn/search?query={q}',
-  '站酷':       'https://www.zcool.com.cn/search/?q={q}',
+  '站酷':       'https://www.zcool.com.cn/search/?word={q}',
   '猪八戒':     'https://www.zbj.com/search?kw={q}',
   '58同城':     'https://www.58.com/',
+};
+
+/* 各赛道在接单平台的「精准搜索关键词」（短、口语化，贴近真实用户检索习惯）
+   - 用于生成平台跳转链接的检索词，替代过长的赛道名，显著提升命中率
+   - 未列出的赛道自动回退到 t.search 或 t.name */
+const TRACK_SEARCH = {
+  't01': '门店自动化代搭建',
+  't02': '数字人代运营',
+  't03': '文案合规审核',
+  't04': '数据清洗代处理',
+  't05': '提示词定制',
+  't06': '私域代运营',
+  't07': '商家引流推广',
+  't08': '餐饮台账系统',
+  't09': '情感树洞陪聊',
+  't10': '宠物成长记录',
+  't11': '行业报告代写',
+  't12': 'PPT模板代做',
+  't13': '短视频剪辑接单',
+  't14': '定制绘本',
+  't15': '老人手机教学',
+  't16': '设备租赁',
+  't17': '上门喂猫',
+  't18': '微SaaS开发',
+  't19': '小程序开发',
+  't20': '3D打印定制',
+  't21': 'RPA流程自动化',
+  't22': '有声书录制',
+  't23': '行业研报代写',
+  't24': '标书代写',
+  't25': '报表代做',
+  't26': '专利申请辅助',
+  't27': '简历优化',
+  't28': '电商主图设计',
+  't29': '装修效果图',
+  't30': '表情包定制',
+  't31': '团购代运营',
+  't32': '智能客服搭建',
 };
 
 /* 导出原始数据，供前端在后台可用时切换为服务端数据（不改写 const） */
