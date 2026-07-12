@@ -486,6 +486,7 @@
       c.addEventListener('click', go);
       c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
     });
+    renderMarketOverview();
   }
 
   /* ====================== 首页真实案例跑马灯（固定 3 条 · 新闻闪播式换批） ====================== */
@@ -525,6 +526,73 @@
         batch.classList.add('tick-in');
       }, 420);
     }, 4500);
+  }
+
+  /* ====================== 赛道行情（基于 TRACKS + CASES 大库结构化） ====================== */
+  let _marketCache = null;
+  function buildMarket() {
+    if (_marketCache) return _marketCache;
+    const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
+    const cases = (window.__BUNDLE_CASES || window.CASES || CASES || []);
+    const cats = [...new Set(tracks.map(t => t.cat))];
+    const caseCountByCat = {}, trackCountByCat = {};
+    cats.forEach(c => {
+      trackCountByCat[c] = tracks.filter(t => t.cat === c).length;
+      caseCountByCat[c] = cases.filter(x => x.cat === c).length;
+    });
+    const maxCase = Math.max(1, ...Object.values(caseCountByCat));
+    const map = {};
+    cats.forEach(cat => {
+      const ts = tracks.filter(t => t.cat === cat);
+      const cs = cases.filter(x => x.cat === cat);
+      const mins = ts.map(t => t.incomeMin).filter(v => typeof v === 'number');
+      const maxs = ts.map(t => t.incomeMax).filter(v => typeof v === 'number');
+      const pMin = mins.length ? Math.min(...mins) : 0;
+      const pMax = maxs.length ? Math.max(...maxs) : 0;
+      let heat = 62 + (caseCountByCat[cat] / maxCase) * 30 + Math.min(trackCountByCat[cat], 6);
+      map[cat] = {
+        cat,
+        trackCount: ts.length,
+        caseCount: cs.length,
+        pMin, pMax,
+        heat: Math.min(98, Math.round(heat)),
+        platforms: (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[cat]) ? PLATFORMS_BY_CAT[cat] : [],
+        cases: cs.slice(0, 6),
+      };
+    });
+    _marketCache = map;
+    return map;
+  }
+  function marketCardHTML(t) {
+    const m = buildMarket()[t.cat];
+    if (!m) return '';
+    const priceTxt = (m.pMin && m.pMax) ? `${fmtMoney(m.pMin)} ~ ${fmtMoney(m.pMax)}/月` : (t.income || '—');
+    const platTags = m.platforms.map(p => `<span class="mk-plat">${esc(p)}</span>`).join('');
+    const caseItems = m.cases.slice(0, 3).map(c => {
+      const oneLine = (c.result || '').split('。')[0] + '。';
+      return `<li><span class="mk-ci-num">#${c.id}</span><span class="mk-ci-title">${esc(c.title)}</span><em>${esc(oneLine)}</em></li>`;
+    }).join('');
+    return `<section class="dcard market-card">
+      <h4>${icon('trending-up')} 赛道行情 · 线上接单参考</h4>
+      <div class="mk-row"><div class="mk-label">价格区间</div><div class="mk-price">${priceTxt}</div></div>
+      <div class="mk-row"><div class="mk-label">需求热度</div><div class="mk-heat"><div class="mk-heat-bar"><i style="width:${m.heat}%"></i></div><span>${m.heat}</span></div></div>
+      <div class="mk-row"><div class="mk-label">接单平台</div><div class="mk-plats">${platTags}</div></div>
+      ${caseItems ? `<div class="mk-cases"><div class="mk-cases-h">${icon('book-open', 15)} 真实接单案例</div><ul class="mk-case-list">${caseItems}</ul></div>` : ''}
+      <p class="mk-note">* 数据基于平台真实案例与赛道库结构化，仅供参考，不承诺收益</p>
+    </section>`;
+  }
+  function renderMarketOverview() {
+    const el = document.getElementById('market-overview');
+    if (!el) return;
+    const list = Object.values(buildMarket()).sort((a, b) => b.heat - a.heat);
+    el.innerHTML = list.map(x => `
+      <article class="mk-overview-card">
+        <div class="mk-ov-cat">${esc(x.cat)}</div>
+        <div class="mk-ov-price">${x.pMin && x.pMax ? fmtMoney(x.pMin) + ' ~ ' + fmtMoney(x.pMax) + '/月' : '—'}</div>
+        <div class="mk-heat"><div class="mk-heat-bar"><i style="width:${x.heat}%"></i></div><span>热度 ${x.heat}</span></div>
+        <div class="mk-ov-plats">${x.platforms.slice(0, 4).map(p => `<span class="mk-plat">${esc(p)}</span>`).join('')}</div>
+        <div class="mk-ov-meta">${x.caseCount} 个真实案例 · ${x.trackCount} 条赛道</div>
+      </article>`).join('');
   }
 
   /* ====================== 模式选择 ====================== */
@@ -1529,7 +1597,7 @@ ${summary}
     const premium = unlocked
       ? `<section class="dcard dcard-premium"><h4>${icon('unlock')} 会员专享 · 完整落地资料</h4><p>${t.locked}</p><div class="premium-cta"><button class="btn btn-primary" id="to-tools">使用落地工具 / 经营助手 →</button></div></section>`
       : `<section class="dcard dcard-locked"><div class="lock-overlay"><div class="lock-icon">${icon('lock')}</div><h4>剩余 2 步冷启动 SOP + 完整落地资料已锁定</h4><p>开通会员后解锁全部字段、30 天启动 SOP、投入产出计算器与 AI 工具包。</p><button class="btn btn-primary" id="open-member">开通会员解锁全部 →</button></div></section>`;
-    $('#detail-body').innerHTML = overview + premium;
+    $('#detail-body').innerHTML = overview + marketCardHTML(t) + premium;
     const tb = $('#to-tools'); if (tb) tb.addEventListener('click', () => { renderTools(); showView('tools'); });
     const mb = $('#open-member'); if (mb) mb.addEventListener('click', openMembership);
     const ai = $('#detail-ai'); if (ai) ai.addEventListener('click', () => askAIAbout(t));
