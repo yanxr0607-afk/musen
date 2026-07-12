@@ -361,7 +361,7 @@
     return v ? v.id.replace('view-', '') : 'home';
   }
   function setModuleActive(view) {
-    const map = { home: 'home', chat: 'assess', quiz: 'assess', result: 'assess', detail: 'assess', tools: 'assess', daily: 'daily', cases: 'cases', member: 'member', takeorders: 'takeorders' };
+    const map = { home: 'home', chat: 'assess', quiz: 'assess', result: 'assess', detail: 'assess', tools: 'assess', daily: 'daily', cases: 'cases', member: 'member', takeorders: 'takeorders', startup: 'startup' };
     const active = map[view] || 'home';
     $$('.mnav-item, .tabbar-item').forEach(b => b.classList.toggle('active', b.dataset.go === active));
   }
@@ -394,6 +394,11 @@
       if (!$('#view-home').classList.contains('is-active')) showView('home');
       setModuleActive('takeorders');
       scrollToSection(document.getElementById('section-takeorders'));
+    }
+    else if (go === 'startup') {
+      if (!$('#view-home').classList.contains('is-active')) showView('home');
+      setModuleActive('startup');
+      scrollToSection(document.getElementById('section-startup'));
     }
   }
   function renderStepper(activeIdx) {
@@ -503,6 +508,7 @@
     });
     renderMarketOverview();
     renderTakeOrderBoard();
+    renderStartupBoard();
   }
 
   /* ====================== 首页真实案例跑马灯（固定 3 条 · 新闻闪播式换批） ====================== */
@@ -714,6 +720,28 @@
           <div class="to-plats-label">接单平台 · 关键词「${esc(kw)}」</div>
           <div class="to-plats">${shown}${rest}</div>
         </div>
+      </article>`;
+    }).join('');
+  }
+
+  /* ====================== 首页「创业对接平台」 ====================== */
+  function renderStartupBoard() {
+    const el = document.getElementById('startup-grid');
+    if (!el) return;
+    const groups = (typeof STARTUP_PLATFORMS !== 'undefined' && STARTUP_PLATFORMS) ? STARTUP_PLATFORMS : [];
+    el.innerHTML = groups.map(g => {
+      const items = (g.items || []).map(it => {
+        const name = esc(it.name || '');
+        const desc = esc(it.desc || '');
+        const url = it.url || '';
+        const link = url
+          ? `<a class="su-plat su-plat--link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="打开 ${name} 官网">${name} ↗</a>`
+          : `<span class="su-plat">${name}</span>`;
+        return `<li class="su-item">${link}<p class="su-desc">${desc}</p></li>`;
+      }).join('');
+      return `<article class="su-card">
+        <h3 class="su-cat">${esc(g.cat)}</h3>
+        <ul class="su-list">${items}</ul>
       </article>`;
     }).join('');
   }

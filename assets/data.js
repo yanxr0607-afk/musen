@@ -1083,6 +1083,57 @@ const INTL_PLATFORMS = {
   'Remote OK': 1, 'PeoplePerHour': 1, 'Turing': 1,
 };
 
+/* 创业对接平台（来源：《创业对接平台大全》docx）
+   - 整体罗列，不按赛道拆分；保留 docx 原 7 大类分组
+   - 每个平台：name 平台名 / url 官网 / desc 一句话简介
+   - 平台名为可点链接，直达官网（target=_blank） */
+const STARTUP_PLATFORMS = [
+  { cat: '一、综合投融资对接平台', items: [
+    { name: '鲸准', url: 'http://www.jingdata.com.cn', desc: '一站式股权投融资平台，3万+投资人、70万+项目' },
+    { name: '投融界', url: 'https://www.trjcn.com', desc: '专业创业服务平台，定期举办创投对接微路演' },
+    { name: '风投之家', url: 'http://fengtouzhijia.com', desc: '项目投融资服务平台，找资金/找项目双向对接' },
+    { name: '创投圈', url: 'https://www.vc.cn', desc: '创业服务平台，连接创业者与投资人' },
+  ]},
+  { cat: '二、早期/天使轮融资平台', items: [
+    { name: '天使汇', url: 'http://angelcrunch.com', desc: '在线创业投资平台，专注天使轮' },
+    { name: '逐鹿X', url: 'https://zhulux.com', desc: '华兴资本旗下早期融资平台' },
+    { name: '猎桔', url: 'https://www.itjuzi.com/special/lieju', desc: 'IT桔子旗下早期项目融资平台' },
+  ]},
+  { cat: '三、官方/国资背景对接平台', items: [
+    { name: '深交所科融通V-Next', url: 'https://www.v-next.cn', desc: '深交所创新创业投融资服务平台' },
+    { name: '南方创投网', url: 'http://www.first-net.cn', desc: '中国高科技项目投融资平台' },
+    { name: '创投辽宁', url: 'http://ct.lneec.com', desc: '辽宁省股权投融资服务平台' },
+    { name: '前海创投孵化器', url: 'http://www.vcfuhua.com', desc: '创投资源配置平台' },
+  ]},
+  { cat: '四、创投媒体旗下融资平台', items: [
+    { name: '36氪创投平台', url: 'https://pitchhub.36kr.com', desc: '36氪旗下融资对接平台' },
+    { name: '36氪融资', url: 'https://rong.36kr.com', desc: '36氪融资服务频道' },
+    { name: '创业邦', url: 'https://www.cyzone.cn', desc: '含 DEMOSPACE 孵化空间、BangCamp 加速营' },
+    { name: 'IT桔子', url: 'https://www.itjuzi.com', desc: '创投数据库 + 融资对接' },
+  ]},
+  { cat: '五、大厂创业平台', items: [
+    { name: '阿里云创新中心', url: 'http://startup.aliyun.com', desc: '全国70+基地，云资源 + 投融资对接' },
+    { name: '腾讯创业', url: 'http://startup.qq.com', desc: '腾讯旗下创投综合服务平台' },
+    { name: '腾讯众创空间', url: 'https://open.qq.com', desc: '腾讯线下孵化 + 创业加速' },
+    { name: '海创汇', url: 'http://www.ihaier.com', desc: '海尔旗下创业加速平台' },
+  ]},
+  { cat: '六、知名孵化器/加速器', items: [
+    { name: '中关村创业大街', url: 'https://www.z-innoway.com', desc: '国家级创新创业地标' },
+    { name: '启迪之星', url: 'http://www.tusstar.com', desc: '清华系全球孵化网络' },
+    { name: '联想之星', url: 'http://www.legendstar.com.cn', desc: '联想旗下早期孵化 + 投资' },
+    { name: '蒲公英孵化器', url: 'http://www.pgyspace.com', desc: '投资与科创服务孵化平台' },
+    { name: '创业工坊', url: 'http://www.chuangyegongfang.cn', desc: '东北科技企业孵化器' },
+    { name: '天府新谷', url: 'https://www.thinkzone.com.cn', desc: '成都科技孵化园区' },
+  ]},
+  { cat: '七、国际融资对接平台', items: [
+    { name: 'OpenVC', url: 'https://www.openvc.app', desc: '全球投资人数据库，免费投递 BP' },
+    { name: 'Raizer', url: 'https://raizer.app', desc: 'AI 匹配 14万+ VC 与初创公司' },
+    { name: 'WealthVP', url: 'https://www.wealthvp.com', desc: '初创企业与合格投资人对接平台' },
+    { name: 'StartX', url: 'https://thestartx.com', desc: '全球创业者与投资人市场' },
+    { name: 'Qubit Capital', url: 'https://qubit.capital', desc: 'AI 驱动的融资对接平台' },
+  ]},
+];
+
 /* 各赛道在接单平台的「精准搜索关键词」（短、口语化，贴近真实用户检索习惯）
    - 用于生成平台跳转链接的检索词，替代过长的赛道名，显著提升命中率
    - 未列出的赛道自动回退到 t.search 或 t.name */
