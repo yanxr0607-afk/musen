@@ -649,7 +649,9 @@
     };
     const platTags = m.platforms.slice(0, MK_PLAT_MAX).map(mkPlatTag).join('')
       + (m.platforms.length > MK_PLAT_MAX
-        ? `<details class="mk-plats-more"><summary>展开全部 ${m.platforms.length} 个接单渠道</summary><div class="mk-plats-rest">${m.platforms.slice(MK_PLAT_MAX).map(mkPlatTag).join('')}</div></details>`
+        ? (isUnlocked()
+            ? `<details class="mk-plats-more"><summary>展开全部 ${m.platforms.length} 个接单渠道</summary><div class="mk-plats-rest">${m.platforms.slice(MK_PLAT_MAX).map(mkPlatTag).join('')}</div></details>`
+            : `<button class="mk-plats-locked" type="button" data-open-member>${icon('lock', 14)} 开通基础会员，展开全部 ${m.platforms.length} 个接单渠道 →</button>`)
         : '');
     const hasJobLinks = m.platforms.some(p => platHasLink(p));
     const caseItems = m.cases.slice(0, 3).map(c => {
@@ -708,7 +710,9 @@
       const kw = '兼职' + ((typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name);
       const shown = plats.slice(0, TO_PLAT_MAX).map(p => platTag(t, p)).join('');
       const rest = (plats.length > TO_PLAT_MAX)
-        ? `<details class="to-plats-more"><summary>展开全部 ${plats.length} 个接单渠道</summary><div class="to-plats-rest">${plats.slice(TO_PLAT_MAX).map(p => platTag(t, p)).join('')}</div></details>`
+        ? (isUnlocked()
+            ? `<details class="to-plats-more"><summary>展开全部 ${plats.length} 个接单渠道</summary><div class="to-plats-rest">${plats.slice(TO_PLAT_MAX).map(p => platTag(t, p)).join('')}</div></details>`
+            : `<button class="to-plats-locked" type="button" data-open-member>${icon('lock', 14)} 开通基础会员，展开全部 ${plats.length} 个接单渠道 →</button>`)
         : '';
       return `<article class="to-card">
         <div class="to-head">
@@ -1259,8 +1263,7 @@ ${summary}
     </article>`;
   }
   function bindCaseMember(root) {
-    if (!root) return;
-    root.querySelectorAll('[data-open-member]').forEach(b => b.addEventListener('click', openMembership));
+    /* [data-open-member] 现由 init() 中的全局委托统一处理，避免重复绑定 */
   }
   function renderCases() {
     const board = $('#case-board'); if (!board) return;
@@ -2068,6 +2071,12 @@ ${summary}
     $('#start-quiz').addEventListener('click', startQuiz);
     $('#nav-start').addEventListener('click', e => { e.preventDefault(); goHome(); });
     $$('.mnav-item, .tabbar-item').forEach(b => b.addEventListener('click', () => handleNav(b.dataset.go)));
+    /* 全局委托：任何带 data-open-member 的元素（含接单渠道锁定提示）点击即打开会员开通 */
+    document.addEventListener('click', e => {
+      if (!(e.target instanceof Element)) return;
+      const om = e.target.closest('[data-open-member]');
+      if (om) { e.preventDefault(); openMembership(); }
+    });
     refreshMemberLabel();
     const xs = $('#nav-start3'); if (xs) xs.addEventListener('click', goHome);
     $('#quiz-home').addEventListener('click', goHome);
