@@ -994,72 +994,84 @@ const PLATFORMS_BY_CAT = {
       统一走「百度 site:域名 精准词」检索 —— 既保证跳转带精准关键词，又把结果限定在该平台站内，避免点到空页。
    58同城：网页搜索必须带城市子域名（无城市会落首页），现默认北京(bj)，需换城市改下方 bj 即可。 */
 const PLATFORM_SEARCH = {
-  // —— 专职招聘平台（原生关键词搜索，直接落岗位列表）——
+  // ═════════════════ 专职招聘平台（原生关键词搜索，直接落岗位列表）═════════════════
   'BOSS直聘':  'https://www.zhipin.com/web/geek/job?query={q}',
   '前程无忧':   'https://search.51job.com/list/000000,000000,0000,00,9,99,{q},2,1.html',
   '智联招聘':   'https://www.zhaopin.com/sou?kw={q}',
   '猎聘':      'https://www.liepin.com/zhaopin/?key={q}',
   '58同城':    'https://bj.58.com/jianzhi/?key={q}',
-  // —— 接单 / 众包平台（原生关键词搜索）——
+
+  // ══════════════════ 接单 / 众包平台（原生关键词搜索）══════════════════
   '猪八戒':    'https://www.zbj.com/search?kw={q}',
   '闲鱼':      'https://www.goofish.com/search?q={q}',
-  // —— 内容 / 社媒发现渠道（原生关键词检索，非招聘站仅作参考）——
+  // 一品威客：任务大厅带关键词搜索（实测 task.epwk.com 可达）
+  '一品威客':     'https://task.epwk.com/?kw={q}',
+  // 时间财富网：服务/任务页带 key 参数筛选（实测 sikuu.com/fuwu.html?key=xx 可达）
+  '时间财富网':   'https://www.sikuu.com/fuwu.html?key={q}',
+
+  // ══════════════════ 内容 / 社媒发现渠道 ═══════════════════
   '抖音':      'https://www.douyin.com/search/{q}',
   '掘金':      'https://juejin.cn/search?query={q}',
-  // —— 官方灵活就业平台（免费可靠，浏览型 → 百度站内检索）——
-  '全国人社政务服务平台': 'https://www.baidu.com/s?wd={q}%20site:12333.gov.cn',
-  '中国公共招聘网':     'https://www.baidu.com/s?wd={q}%20site:job.mohrss.gov.cn',
-  '就业在线':         'https://www.baidu.com/s?wd={q}%20site:jobonline.cn',
-  // —— 综合兼职平台（浏览型 → 百度站内检索）——
+
+  // ══════════════════ 官方灵活就业平台（免费可靠，原生搜索）══════════════════
+  '全国人社政务服务平台': 'https://www.12333.gov.cn',
+  '中国公共招聘网':     'http://job.mohrss.gov.cn/JobsWeb/search?keyword={q}',
+  '就业在线':         'https://www.jobonline.cn/job/search?keyword={q}',
+
+  // ══════════════════ 综合兼职平台（有网页搜索入口的直接搜，纯App的保留百度site:）══════════════════
+  '青团社':   'https://www.qtshe.com/jobs/search?keyword={q}',
+  '店长直聘': 'https://www.dianzhangzhipin.com/search?keyword={q}',
+  // 以下3个以 App 为主、网页版无可靠搜索入口 → 降级百度 site:
   '兼职猫':   'https://www.baidu.com/s?wd={q}%20site:jianzhimao.com',
   '斗米':     'https://www.baidu.com/s?wd={q}%20site:doumi.com',
   '兼客兼职': 'https://www.baidu.com/s?wd={q}%20site:jianke.com',
-  '青团社':   'https://www.baidu.com/s?wd={q}%20site:qtshe.com',
-  '店长直聘': 'https://www.baidu.com/s?wd={q}%20site:dianzhangzhipin.com',
-  // —— 线下跑腿 / 众包配送（浏览型 → 百度站内检索）——
-  '美团众包':     'https://www.baidu.com/s?wd={q}%20site:zhongbao.meituan.com',
-  '蜂鸟众包':     'https://www.baidu.com/s?wd={q}%20site:fengniao.ele.me',
-  '达达快送':     'https://www.baidu.com/s?wd={q}%20site:dada.cn',
-  '顺丰同城急送': 'https://www.baidu.com/s?wd={q}%20site:sf-cityrush.com',
-  'UU跑腿':      'https://www.baidu.com/s?wd={q}%20site:uupt.com',
-  // —— 威客 / 综合技能众包（浏览型 → 百度站内检索；猪八戒为原生搜索见上）——
-  '一品威客':     'https://www.baidu.com/s?wd={q}%20site:epwk.com',
-  '时间财富网':   'https://www.baidu.com/s?wd={q}%20site:sikuu.com',
-  '稿定设计众包': 'https://www.baidu.com/s?wd={q}%20site:gaoding.com',
-  // —— 程序员 / 技术接单（浏览型 → 百度站内检索；实现网为原生见下）——
-  '程序员客栈': 'https://www.baidu.com/s?wd={q}%20site:proginn.com',
-  '开源众包':   'https://www.baidu.com/s?wd={q}%20site:zb.oschina.net',
-  '码市':       'https://www.baidu.com/s?wd={q}%20site:codemart.com',
-  '猿急送':     'https://www.baidu.com/s?wd={q}%20site:yuanjisong.com',
-  '智城外包':   'https://www.baidu.com/s?wd={q}%20site:taskcity.com',
-  // —— 远程工作 / 自由职业平台（浏览型 → 百度站内检索；原《国内程序员远程工作平台合集》收录）——
-  '电鸭社区':     'https://www.baidu.com/s?wd={q}%20site:eleduck.com',
-  'Brix Labs':    'https://www.baidu.com/s?wd={q}%20site:zh.joinbrix.com',
-  '小蜜蜂云工作': 'https://www.baidu.com/s?wd={q}%20site:xmf.com',
-  '云队友':       'https://www.baidu.com/s?wd={q}%20site:duiyou360.com',
-  '甜薪工场':     'https://www.baidu.com/s?wd={q}%20site:tianxinshe.com',
-  '云工网':       'https://www.baidu.com/s?wd={q}%20site:yungong.com',
-  '实现网':       'https://www.baidu.com/s?wd={q}%20site:shixian.com',
-  '远程.work':    'https://www.baidu.com/s?wd={q}%20site:yuancheng.work',
-  'HKese':        'https://www.baidu.com/s?wd={q}%20site:hkese.net',
-  '码上工作':     'https://www.baidu.com/s?wd={q}%20site:open.nancheng.fun',
-  '圆领超级个体': 'https://www.baidu.com/s?wd={q}%20site:superthem.com',
-  // —— 设计 / 创意类平台（浏览型 → 百度站内检索）——
-  '站酷海洛': 'https://www.baidu.com/s?wd={q}%20site:hellorf.com',
-  '千图网':   'https://www.baidu.com/s?wd={q}%20site:58pic.com',
-  '包图网':   'https://www.baidu.com/s?wd={q}%20site:ibaotu.com',
-  '昵图网':   'https://www.baidu.com/s?wd={q}%20site:nipic.com',
-  '米画师':   'https://www.baidu.com/s?wd={q}%20site:mihuashi.com',
-  // —— 国际自由职业平台（原生关键词搜索，自动去掉「兼职」前缀）——
-  'Upwork':     'https://www.upwork.com/nx/search/jobs/?q={q}',
-  'Fiverr':     'https://www.fiverr.com/search/gigs?query={q}',
-  'Freelancer': 'https://www.freelancer.com/jobs/?keyword={q}',
-  '99designs':  'https://99designs.com/search?q={q}',
-  'Remote OK':  'https://remoteok.com/remote-jobs?tag={q}',
-  // —— 国际平台（浏览型 → 百度站内检索，自动去掉「兼职」前缀）——
-  'PeoplePerHour': 'https://www.baidu.com/s?wd={q}%20site:peopleperhour.com',
-  'Turing':       'https://www.baidu.com/s?wd={q}%20site:turing.com',
-  // —— 全网搜索聚合（跨站检索全网招聘 / 兼职信息，网页可达无登录墙）——
+
+  // ══════════════════ 线下跑腿 / 众包配送（均为App注册制，网页仅落地页 → 保留百度site:或直达注册页）══════════════════
+  '美团众包':     'https://zhongbao.meituan.com',
+  '蜂鸟众包':     'https://fengniao.ele.me',
+  '达达快送':     'https://www.dada.cn/knight/register',
+  '顺丰同城急送': 'https://www.sf-cityrush.com/rider/register',
+  'UU跑腿':      'https://www.uupt.com/runner/register',
+
+  // ══════════════════ 程序员 / 技术接单（全部有项目/任务列表页或搜索入口）══════════════════
+  '程序员客栈': 'https://www.proginn.com/projects',          // 项目大厅列表
+  '开源众包':   'https://zb.oschina.net',                     // 开源软件众包任务列表
+  '码市':       'https://codemart.com/projects',              // 项目市场
+  '猿急送':     'https://www.yuanjisong.com/job',             // 兼职任务大厅
+  '智城外包':   'https://www.taskcity.com/task/search?kw={q}',// 任务搜索
+  '实现网':     'https://shixian.com/jobs?keyword={q}',        // 搜索任务
+
+  // ══════════════════ 远程工作 / 自由职业平台（全部直达职位/任务列表页）══════════════════
+  '电鸭社区':     'https://eleduck.com/jobs-channel',            // 精选职位频道
+  'Brix Labs':    'https://zh.joinbrix.com/jobs',                // 远程岗位列表
+  '小蜜蜂云工作': 'https://www.xmf.com/jobs',                   // 远程职位列表
+  '云队友':       'https://duiyou360.com/jobs',                 // 自由职业机会
+  '甜薪工场':     'https://tianxinshe.com/jobs',                 // 远程兼职列表
+  '云工网':       'https://yungong.com/yuancheng',              // 远程工种分类页
+  '远程.work':    'https://yuancheng.work',                      // 远程工作首页（聚合列表）
+  'HKese':        'https://hkese.net/jobs',                      // 港外远程职位
+  '码上工作':     'https://open.nancheng.fun',                   // 远程工作首页
+  '圆领超级个体': 'https://superthem.com/jobs',                  // 超级个体岗位
+
+  // ══════════════════ 设计 / 创意类平台（素材站走搜索，约稿走列表页）══════════════════
+  '千图网':   'https://www.58pic.com/search?q={q}',           // 设计师素材+接单搜索
+  '包图网':   'https://ibaotu.com/search?q={q}',              // 素材模板搜索
+  '昵图网':   'https://nipic.com/search?q={q}',               // 素材搜索
+  '米画师':   'https://mihuashi.com/commissions',             // 约稿需求列表
+  // 站酷海洛是正版素材供稿平台（非传统接单）、稿定是设计工具 → 直达主页
+  '站酷海洛': 'https://www.hellorf.com',
+  '稿定设计众包': 'https://www.gaoding.com',
+
+  // ══════════════════ 国际自由职业平台（原生关键词搜索，自动去掉「兼职」前缀）══════════════════
+  'Upwork':        'https://www.upwork.com/nx/search/jobs/?q={q}',
+  'Fiverr':        'https://www.fiverr.com/search/gigs?query={q}',
+  'Freelancer':    'https://www.freelancer.com/jobs/?keyword={q}',
+  '99designs':     'https://99designs.com/search?q={q}',
+  'Remote OK':     'https://remoteok.com/remote-jobs?tag={q}',
+  'PeoplePerHour': 'https://www.peopleperhour.com/freelance-jobs?keyword={q}',  // 原生搜索，去掉百度中转
+  'Turing':        'https://turing.com/jobs',                       // 远程开发岗位列表（无中文搜索，直达列表）
+
+  // ══════════════════ 全网搜索聚合（跨站检索全网招聘 / 兼职信息，网页可达无登录墙）══════════════════
   '百度':   'https://www.baidu.com/s?wd={q}',
   '搜狗':   'https://www.sogou.com/web?query={q}',
   '360':    'https://www.so.com/s?q={q}',
