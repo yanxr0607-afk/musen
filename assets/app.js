@@ -626,7 +626,7 @@
     if (!m) return '';
     const priceTxt = (m.pMin && m.pMax) ? `${fmtMoney(m.pMin)} ~ ${fmtMoney(m.pMax)}/月` : (t.income || '—');
     // 「接单平台」行：有搜索入口的变成可点击链接（按该品类下收益最高的精准赛道搜索），无入口的保留为普通标签
-    const kw = m.topTrack || m.cat;
+    const kw = '兼职' + (m.topTrack || m.cat);
     const platTags = m.platforms.map(p => {
       const href = platSearchHref(p, kw);
       if (!href) return `<span class="mk-plat">${esc(p)}</span>`;
@@ -653,7 +653,7 @@
     if (!el) return;
     const list = Object.values(buildMarket()).sort((a, b) => b.heat - a.heat);
     const platTag = (x, p) => {
-      const kw = x.topTrack || x.cat;
+      const kw = '兼职' + (x.topTrack || x.cat);
       const href = platSearchHref(p, kw);
       if (!href) return '<span class="mk-plat">' + esc(p) + '</span>';
       return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」">' + esc(p) + ' ↗</a>';
@@ -674,7 +674,7 @@
     if (!el) return;
     const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
     const platTag = (t, p) => {
-      const kw = (typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name;   // 精准短词，而非过长赛道名
+      const kw = '兼职' + ((typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name);   // 精准短词，而非过长赛道名
       const href = platSearchHref(p, kw);
       if (!href) return '<span class="to-plat">' + esc(p) + '</span>';
       return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗</a>';
@@ -683,7 +683,7 @@
     el.innerHTML = sorted.map(t => {
       const incomeTxt = (t.incomeMin && t.incomeMax) ? (fmtMoney(t.incomeMin) + ' ~ ' + fmtMoney(t.incomeMax) + '/月') : (t.income || '—');
       const plats = (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[t.cat]) ? PLATFORMS_BY_CAT[t.cat] : [];
-      const kw = (typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name;
+      const kw = '兼职' + ((typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || t.search || t.name);
       return `<article class="to-card">
         <div class="to-head">
           <span class="to-cat">${esc(t.cat)}</span>
