@@ -987,5 +987,22 @@ const PLATFORMS_BY_CAT = {
   '视觉设计生产类': ['站酷', '小红书', '淘宝', '闲鱼', '猪八戒'],
 };
 
+/* 各接单平台的「公开搜索」直达链接（{q} 占位符会被赛道大类名替换）。
+   - 仅收录有可用 Web 搜索入口的平台；私密渠道（微信私域 / 小区社群 / 独立站等）不在此列。
+   - 58同城等无通用搜索参数的，跳转官网首页由用户自行检索。 */
+const PLATFORM_SEARCH = {
+  '闲鱼':       'https://www.goofish.com/search?q={q}',
+  '抖音':       'https://www.douyin.com/search/{q}',
+  '小红书':     'https://www.xiaohongshu.com/search_result?q={q}',
+  '公众号':     'https://weixin.sogou.com/weixin?type=2&query={q}',
+  '淘宝':       'https://s.taobao.com/search?q={q}',
+  '知乎':       'https://www.zhihu.com/search?q={q}&type=content',
+  'ProductHunt':'https://www.producthunt.com/search?q={q}',
+  '掘金':       'https://juejin.cn/search?query={q}',
+  '站酷':       'https://www.zcool.com.cn/search/?q={q}',
+  '猪八戒':     'https://www.zbj.com/search?kw={q}',
+  '58同城':     'https://www.58.com/',
+};
+
 /* 导出原始数据，供前端在后台可用时切换为服务端数据（不改写 const） */
 try { window.__BUNDLE_TRACKS = TRACKS; window.__BUNDLE_CASES = CASES; } catch (e) {}

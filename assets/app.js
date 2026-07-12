@@ -274,7 +274,8 @@
     sparkle: '<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/>',
     file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
     search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
-    'book-open': '<path d="M2 3h7a2 2 0 0 1 2 2v14a2 2 0 0 0 2-2h7a2 2 0 0 1 2 2v-14a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2z"/><path d="M2 3v16"/><path d="M22 3v16"/>'
+    'book-open': '<path d="M2 3h7a2 2 0 0 1 2 2v14a2 2 0 0 0 2-2h7a2 2 0 0 1 2 2v-14a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2z"/><path d="M2 3v16"/><path d="M22 3v16"/>',
+    'briefcase': '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="2" y1="13" x2="22" y2="13"/>'
   };
   function icon(name, size) {
     size = size || 20;
@@ -596,6 +597,18 @@
     if (!m) return '';
     const priceTxt = (m.pMin && m.pMax) ? `${fmtMoney(m.pMin)} ~ ${fmtMoney(m.pMax)}/月` : (t.income || '—');
     const platTags = m.platforms.map(p => `<span class="mk-plat">${esc(p)}</span>`).join('');
+    // 兼职招聘信息：仅对有公开搜索入口的平台生成直达链接（检索词 = 赛道大类）
+    const PLAT_ALIAS = { '抖音本地生活': '抖音', '抖音本地': '抖音' };
+    const jobLinks = m.platforms
+      .map(p => {
+        const key = (PLAT_ALIAS[p] || p);
+        const tpl = (typeof PLATFORM_SEARCH !== 'undefined' && PLATFORM_SEARCH[key]) ? PLATFORM_SEARCH[key] : null;
+        if (!tpl) return '';
+        const href = tpl.replace('{q}', encodeURIComponent(m.cat));
+        return `<a class="mk-job-link" href="${href}" target="_blank" rel="noopener noreferrer">${esc(p)} <span class="mk-ext">↗</span></a>`;
+      })
+      .filter(Boolean)
+      .join('');
     const caseItems = m.cases.slice(0, 3).map(c => {
       const oneLine = (c.result || '').split('。')[0] + '。';
       return `<li><span class="mk-ci-num">#${c.id}</span><span class="mk-ci-title">${esc(c.title)}</span><em>${esc(oneLine)}</em></li>`;
@@ -605,6 +618,7 @@
       <div class="mk-row"><div class="mk-label">价格区间</div><div class="mk-price">${priceTxt}</div></div>
       <div class="mk-row"><div class="mk-label">需求热度</div><div class="mk-heat"><div class="mk-heat-bar"><i style="width:${m.heat}%"></i></div><span>${m.heat}</span></div></div>
       <div class="mk-row"><div class="mk-label">接单平台</div><div class="mk-plats">${platTags}</div></div>
+      ${jobLinks ? `<div class="mk-jobs"><div class="mk-jobs-h">${icon('briefcase', 15)} 兼职招聘信息 · 去哪接单</div><div class="mk-job-links">${jobLinks}</div><p class="mk-jobs-note">点平台直达搜索实时在招兼职，账号注册与交易请自理</p></div>` : ''}
       ${caseItems ? `<div class="mk-cases"><div class="mk-cases-h">${icon('book-open', 15)} 真实接单案例</div><ul class="mk-case-list">${caseItems}</ul></div>` : ''}
       ${m.live ? `<div class="mk-live"><div class="mk-live-h">${icon('activity', 15)} 实时需求信号（公开检索聚合）</div><div class="mk-heat"><div class="mk-heat-bar"><i style="width:${m.live.signal}%"></i></div><span>${m.live.signal}</span></div>${m.live.prices && m.live.prices.length ? `<div class="mk-live-prices">公开报价参考：${m.live.prices.map(p => `<span class="mk-plat">${esc(p)}</span>`).join('')}</div>` : ''}</div>` : ''}
       <p class="mk-note">* 数据基于平台真实案例与赛道库结构化，仅供参考，不承诺收益</p>
