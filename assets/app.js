@@ -628,12 +628,20 @@
     const el = document.getElementById('market-overview');
     if (!el) return;
     const list = Object.values(buildMarket()).sort((a, b) => b.heat - a.heat);
+    const _PLAT_ALIAS = { '抖音本地生活': '抖音', '抖音本地': '抖音' };
+    const platTag = (cat, p) => {
+      const key = (_PLAT_ALIAS[p] || p);
+      const tpl = (typeof PLATFORM_SEARCH !== 'undefined' && PLATFORM_SEARCH[key]) ? PLATFORM_SEARCH[key] : null;
+      if (!tpl) return '<span class="mk-plat">' + esc(p) + '</span>';
+      const href = tpl.replace('{q}', encodeURIComponent(cat));
+      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(cat) + '」">' + esc(p) + ' ↗</a>';
+    };
     el.innerHTML = list.map(x => `
       <article class="mk-overview-card">
         <div class="mk-ov-cat">${esc(x.cat)}</div>
         <div class="mk-ov-price">${x.pMin && x.pMax ? fmtMoney(x.pMin) + ' ~ ' + fmtMoney(x.pMax) + '/月' : '—'}</div>
         <div class="mk-heat"><div class="mk-heat-bar"><i style="width:${x.heat}%"></i></div><span>热度 ${x.heat}</span></div>
-        <div class="mk-ov-plats">${x.platforms.slice(0, 4).map(p => `<span class="mk-plat">${esc(p)}</span>`).join('')}</div>
+        <div class="mk-ov-plats">${x.platforms.slice(0, 4).map(p => platTag(x.cat, p)).join('')}</div>
         <div class="mk-ov-meta">${x.caseCount} 个真实案例 · ${x.trackCount} 条赛道</div>
       </article>`).join('');
   }
