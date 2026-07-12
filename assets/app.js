@@ -734,15 +734,23 @@
         const name = esc(it.name || '');
         const desc = esc(it.desc || '');
         const url = it.url || '';
+        const domain = url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');   // 仅显示域名，卡片更干净
         const link = url
           ? `<a class="su-plat su-plat--link" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="打开 ${name} 官网">${name} ↗</a>`
           : `<span class="su-plat">${name}</span>`;
-        return `<li class="su-item">${link}<p class="su-desc">${desc}</p></li>`;
+        const urlLine = url
+          ? `<a class="su-url" href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="访问 ${esc(domain)}">${esc(domain)}</a>`
+          : '';
+        return `<article class="su-card">
+          <h3 class="su-name">${link}</h3>
+          ${urlLine}
+          <p class="su-desc">${desc}</p>
+        </article>`;
       }).join('');
-      return `<article class="su-card">
+      return `<div class="su-group">
         <h3 class="su-cat">${esc(g.cat)}</h3>
-        <ul class="su-list">${items}</ul>
-      </article>`;
+        <div class="su-group-grid">${items}</div>
+      </div>`;
     }).join('');
   }
 
