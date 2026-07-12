@@ -752,3 +752,9 @@ button { font-family: inherit; cursor: pointer; }
 @media (max-width: 560px) {
   .market-grid { grid-template-columns: 1fr; }
 }
+
+/* 行情卡 · 实时需求信号（爬虫聚合） */
+.mk-live { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line-strong); }
+.mk-live-h { font-size: 13px; font-weight: 700; color: var(--ink); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.mk-live-prices { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+.mk-live-prices .mk-plat { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.35); color: var(--ok); }

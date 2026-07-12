@@ -530,6 +530,20 @@
 
   /* ====================== 赛道行情（基于 TRACKS + CASES 大库结构化） ====================== */
   let _marketCache = null;
+  let _liveMarket = null;
+  async function loadLiveMarket() {
+    try {
+      const r = await fetch('/api/market');
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d && d.cats && Object.keys(d.cats).length) {
+        _liveMarket = d.cats;
+        _marketCache = null; // 重建以合并实时信号
+        const ov = document.getElementById('market-overview');
+        if (ov) renderMarketOverview();
+      }
+    } catch (e) { /* 回退本地大库 */ }
+  }
   function buildMarket() {
     if (_marketCache) return _marketCache;
     const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
@@ -558,6 +572,7 @@
         heat: Math.min(98, Math.round(heat)),
         platforms: (typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[cat]) ? PLATFORMS_BY_CAT[cat] : [],
         cases: cs.slice(0, 6),
+        live: (_liveMarket && _liveMarket[cat]) ? _liveMarket[cat] : null,
       };
     });
     _marketCache = map;
@@ -578,6 +593,7 @@
       <div class="mk-row"><div class="mk-label">需求热度</div><div class="mk-heat"><div class="mk-heat-bar"><i style="width:${m.heat}%"></i></div><span>${m.heat}</span></div></div>
       <div class="mk-row"><div class="mk-label">接单平台</div><div class="mk-plats">${platTags}</div></div>
       ${caseItems ? `<div class="mk-cases"><div class="mk-cases-h">${icon('book-open', 15)} 真实接单案例</div><ul class="mk-case-list">${caseItems}</ul></div>` : ''}
+      ${m.live ? `<div class="mk-live"><div class="mk-live-h">${icon('activity', 15)} 实时需求信号（公开检索聚合）</div><div class="mk-heat"><div class="mk-heat-bar"><i style="width:${m.live.signal}%"></i></div><span>${m.live.signal}</span></div>${m.live.prices && m.live.prices.length ? `<div class="mk-live-prices">公开报价参考：${m.live.prices.map(p => `<span class="mk-plat">${esc(p)}</span>`).join('')}</div>` : ''}</div>` : ''}
       <p class="mk-note">* 数据基于平台真实案例与赛道库结构化，仅供参考，不承诺收益</p>
     </section>`;
   }
@@ -1902,6 +1918,7 @@ ${summary}
   function init() {
     mountIcons();
     renderHome(); renderBanner(); renderStepper(0); renderCaseTicker();
+    loadLiveMarket();
     $('#mode-chat').addEventListener('click', openChatMode);
     $('#mode-quiz').addEventListener('click', startQuiz);
     $('#hero-start').addEventListener('click', startQuiz);

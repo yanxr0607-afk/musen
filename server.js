@@ -17,6 +17,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const crawler = require('./crawler.js');
 
 const ROOT = __dirname;
 const PORT = process.env.PORT || 8787;
@@ -758,6 +759,12 @@ function handleUserProfile(req, res) {
     /* 公开内容 / 上报 */
     if (u === '/api/tracks' && req.method === 'GET') return handleTracks(req, res);
     if (u === '/api/cases' && req.method === 'GET') return handleCases(req, res);
+    if (u === '/api/market' && req.method === 'GET') {
+      const f = path.join(DATA_DIR, 'market.json');
+      if (!fs.existsSync(f)) return sendJSON(res, 200, { fallback: true, cats: {} });
+      try { return sendJSON(res, 200, JSON.parse(fs.readFileSync(f, 'utf8'))); }
+      catch (e) { return sendJSON(res, 200, { fallback: true, cats: {} }); }
+    }
     if (u === '/api/register' && req.method === 'POST') return await handleRegister(req, res);
     if (u === '/api/event' && req.method === 'POST') return await handleEvent(req, res);
     /* 运营配置 / 支付订单（公开） */
@@ -811,6 +818,11 @@ function handleUserProfile(req, res) {
   }
 })();
 
+/* 赛道行情爬虫：启动 10s 后触发首次抓取，之后每天定时（设 DISABLE_CRAWL=1 可关闭） */
+if (process.env.DISABLE_CRAWL !== '1') {
+  setTimeout(() => crawler.runCrawl(DATA_DIR).catch((e) => console.warn('[crawler] 首次抓取失败:', e.message)), 10000);
+  setInterval(() => crawler.runCrawl(DATA_DIR).catch(() => {}), 24 * 3600 * 1000);
+}
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`OPC SaaS server  ➜  http://127.0.0.1:${PORT}`);
   console.log(`混元大模型状态  ➜  ${ONLINE ? 'ONLINE (' + HUNYUAN_MODEL + ')' : 'OFFLINE（使用本地规则引擎，配置 HUNYUAN_API_KEY 后启用）'}`);
