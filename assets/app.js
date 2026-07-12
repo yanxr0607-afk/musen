@@ -2121,6 +2121,20 @@ ${summary}
     $('#go-tools').addEventListener('click', () => { renderTools(); showView('tools'); });
     $('#tools-back').addEventListener('click', () => showView('detail'));
     showView('home');
+    /* 移动端「返回平台」浮动按钮：滚动后出现，点击回到平台顶部（外链跳转后也能一键回平台） */
+    const btp = $('#back-to-platform');
+    if (btp) {
+      const toggleBtp = () => {
+        if (window.scrollY > 480) btp.classList.add('is-visible');
+        else btp.classList.remove('is-visible');
+      };
+      window.addEventListener('scroll', toggleBtp, { passive: true });
+      toggleBtp();
+      btp.addEventListener('click', () => {
+        if ($('#view-home') && !$('#view-home').classList.contains('is-active')) showView('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
     registerServiceWorker();
     /* 后台可用时拉取服务端数据（赛道/案例），加载完成后刷新已渲染内容 */
     loadServerContent().then(() => {

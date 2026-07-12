@@ -360,6 +360,26 @@ button { font-family: inherit; cursor: pointer; }
 .foot .view-line { margin-top: 8px; }
 .foot #view-count { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--primary-soft); border: 1px solid rgba(99,102,241,.35); color: var(--primary-d); font-weight: 600; font-size: 12.5px; }
 .foot #view-count b { color: var(--accent); }
+
+/* 移动端「返回平台」浮动按钮（外链跳转后一键回平台，桌面端隐藏） */
+.back-to-platform {
+  position: fixed; right: 16px; bottom: 76px; z-index: 70;
+  display: none;                                  /* 桌面端隐藏，移动端显示 */
+  align-items: center; gap: 6px;
+  padding: 10px 15px; border-radius: 999px;
+  background: var(--accent); color: #04222A;
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  border: none; cursor: pointer;
+  box-shadow: 0 6px 22px rgba(34,211,238,.42);
+  opacity: 0; transform: translateY(12px); pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+}
+.back-to-platform .ico { width: 18px; height: 18px; }
+.back-to-platform.is-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.back-to-platform:active { transform: scale(.96); }
+@media (max-width: 640px) {
+  .back-to-platform { display: inline-flex; }
+}
 .backend-status { display: inline-block; margin-left: 6px; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; vertical-align: middle; }
 .foot-admin { margin-top: 6px; }
 .foot-link { color: var(--muted); font-size: 12.5px; text-decoration: none; border-bottom: 1px dashed var(--line-strong); padding-bottom: 1px; transition: color .15s; }
