@@ -1,6 +1,6 @@
 // OPC H5 Web App — Service Worker
-// 策略：核心资源预缓存；导航走「网络优先 + 离线回退缓存」；静态资源走「缓存优先 + 后台更新」。
-const CACHE = 'opc-h5-v1';
+// 策略：核心资源预缓存；导航走「网络优先 + 离线回退缓存」；静态资源走「网络优先 + 离线回退缓存」（每次部署自动拉新，避免旧 app.js 缓存导致功能不生效）。
+const CACHE = 'opc-h5-v2';
 const CORE = [
   './',
   './index.html',
@@ -43,16 +43,13 @@ self.addEventListener('fetch', e => {
     return;
   }
 
+  // 静态资源：网络优先 + 离线回退缓存（修复部署后旧 app.js 缓存导致功能不生效的问题）
   e.respondWith(
-    caches.match(req).then(r => {
-      if (r) {
-        fetch(req).then(res => { if (res.ok) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(req, cp)); } }).catch(() => {});
-        return r;
-      }
-      return fetch(req).then(res => {
-        if (res.ok) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(req, cp)); }
+    fetch(req)
+      .then(res => {
+        if (res.ok) { const cp = res.clone(); caches.open(CACHE).then(c => c.put(req, cp)).catch(() => {}); }
         return res;
-      }).catch(() => r);
-    })
+      })
+      .catch(() => caches.match(req).then(r => r || fetch(req)))
   );
 });
