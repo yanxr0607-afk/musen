@@ -275,7 +275,8 @@
     file: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>',
     search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
     'book-open': '<path d="M2 3h7a2 2 0 0 1 2 2v14a2 2 0 0 0 2-2h7a2 2 0 0 1 2 2v-14a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2z"/><path d="M2 3v16"/><path d="M22 3v16"/>',
-    'briefcase': '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="2" y1="13" x2="22" y2="13"/>'
+    'briefcase': '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="2" y1="13" x2="22" y2="13"/>',
+    'chevron-down': '<polyline points="6 9 12 15 18 9"/>'
   };
   function icon(name, size) {
     size = size || 20;
@@ -509,6 +510,7 @@
     renderMarketOverview();
     renderTakeOrderBoard();
     renderStartupBoard();
+    renderTrackRank();
   }
 
   /* ====================== 首页真实案例跑马灯（固定 3 条 · 新闻闪播式换批） ====================== */
@@ -756,6 +758,69 @@
         <div class="su-group-grid">${items}</div>
       </div>`;
     }).join('');
+  }
+
+  /* ====================== 首页「赛道热榜」（微博热搜风格 + 会员 SOP 门禁） ====================== */
+  function renderTrackRank() {
+    const el = document.getElementById('track-rank');
+    if (!el) return;
+    const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
+    const ranked = tracks.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
+    const member = isUnlocked();
+    const riskTxt = ['极低', '低', '中', '高', '极高'];
+    el.innerHTML = ranked.map((t, i) => {
+      const rank = i + 1;
+      const noCls = rank <= 3 ? ' rank-no--' + rank : '';
+      const hotTag = rank <= 3
+        ? `<span class="rank-hot rank-hot--${rank}">${rank === 1 ? '沸' : rank === 2 ? '热' : '新'}</span>`
+        : '';
+      const incomeTxt = (t.incomeMin && t.incomeMax)
+        ? (fmtMoney(t.incomeMin) + ' ~ ' + fmtMoney(t.incomeMax) + '/月')
+        : (t.income || '—');
+      const desc = esc(t.logic || t.ability || '');
+      const cat = esc(t.cat || '');
+      const ability = esc(t.ability || '');
+      const aiPoint = esc(t.aiPoint || '');
+      const capital = (typeof t.capital === 'number') ? ('¥' + fmtMoney(t.capital)) : '—';
+      const payback = esc(t.paybackLabel || '—');
+      const risk = riskTxt[t.risk] || '—';
+      const steps = (t.coldStart || []);
+      const lockedNote = esc(t.locked || '');
+      const stepHtml = steps.map((s, idx) => `<li><span class="sop-idx">${idx + 1}</span><span>${esc(s)}</span></li>`).join('');
+      const sopBody = `<ol class="sop-steps">${stepHtml}</ol>` + (member && lockedNote ? `<p class="sop-locked-note">${icon('crown', 14)} 会员专享：${lockedNote}</p>` : '');
+      const sopBlock = member
+        ? `<div class="rank-sop">${sopBody}</div>`
+        : `<div class="rank-sop sop-gated">${sopBody}<div class="sop-mask"><button class="btn btn-primary sop-unlock" type="button" data-open-member>${icon('lock', 15)} 开通会员，查看完整落地 SOP →</button></div></div>`;
+      return `<div class="rank-row" data-id="${esc(t.id)}" role="button" tabindex="0" aria-expanded="false">
+        <div class="rank-line">
+          <span class="rank-no${noCls}">${rank}</span>
+          <div class="rank-main">
+            <div class="rank-top"><span class="rank-title">${esc(t.name)}</span>${hotTag}</div>
+            <div class="rank-sub"><span class="rank-cat">${cat}</span><span class="rank-desc">${desc}</span></div>
+          </div>
+          <div class="rank-side">
+            <div class="rank-income">${incomeTxt}</div>
+            <div class="rank-label">预估月收益</div>
+          </div>
+          <span class="rank-toggle">${icon('chevron-down', 18)}</span>
+        </div>
+        <div class="rank-detail">
+          <div class="rank-facts">
+            <div class="rf"><span>启动资金</span><b>${capital}</b></div>
+            <div class="rf"><span>回本周期</span><b>${payback}</b></div>
+            <div class="rf"><span>风险等级</span><b>${risk}</b></div>
+          </div>
+          ${ability ? `<p class="rank-ability"><b>适合谁：</b>${ability}</p>` : ''}
+          ${aiPoint ? `<p class="rank-logic"><b>赛道逻辑：</b>${aiPoint}</p>` : ''}
+          <div class="rank-sop-wrap">
+            <div class="rank-sop-h">${icon('rocket')} 落地 SOP（全流程真实案例）</div>
+            ${sopBlock}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    const cnt = document.getElementById('track-rank-count');
+    if (cnt) cnt.textContent = ranked.length;
   }
 
   /* ====================== 模式选择 ====================== */
@@ -2077,6 +2142,26 @@ ${summary}
       const om = e.target.closest('[data-open-member]');
       if (om) { e.preventDefault(); openMembership(); }
     });
+    /* 赛道热榜：点击行展开/收起赛道简介；会员 SOP 解锁按钮由上面的全局委托处理 */
+    const sr = document.getElementById('section-trackrank');
+    if (sr) {
+      sr.addEventListener('click', e => {
+        if (!(e.target instanceof Element)) return;
+        if (e.target.closest('[data-open-member]') || e.target.closest('a, button')) return;
+        const row = e.target.closest('.rank-row');
+        if (!row) return;
+        const open = row.classList.toggle('is-open');
+        row.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      sr.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const row = e.target.closest('.rank-row');
+        if (!row || e.target.closest('[data-open-member], a, button')) return;
+        e.preventDefault();
+        const open = row.classList.toggle('is-open');
+        row.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    }
     refreshMemberLabel();
     const xs = $('#nav-start3'); if (xs) xs.addEventListener('click', goHome);
     $('#quiz-home').addEventListener('click', goHome);
