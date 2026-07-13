@@ -370,6 +370,37 @@ function checkAuth(req) {
   return m && adminTokens.has(m[1]);
 }
 
+/* ---- 公开：手机验证码（内存存储，无真实短信网关时返回 devCode 供演示） ---- */
+const smsCodes = new Map();   // phone -> { code, expire, sentAt }
+function genSmsCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
+async function handleSmsSend(req, res) {
+  const b = await readBody(req);
+  const phone = String(b.phone || '').trim();
+  if (!/^1\d{10}$/.test(phone)) return sendJSON(res, 400, { ok: false, error: '手机号格式不正确' });
+  const now = Date.now();
+  const prev = smsCodes.get(phone);
+  if (prev && now - prev.sentAt < 60000) {
+    const left = Math.ceil((60000 - (now - prev.sentAt)) / 1000);
+    return sendJSON(res, 429, { ok: false, error: '验证码发送过于频繁，请 ' + left + ' 秒后再试', retryIn: left });
+  }
+  const code = genSmsCode();
+  smsCodes.set(phone, { code, expire: now + 5 * 60 * 1000, sentAt: now });
+  console.log('[sms] 已向 ' + phone + ' 下发验证码（演示）：' + code);
+  // 无真实短信网关：返回 devCode 供前端演示流程走通；生产环境应改为只返回 {ok:true}
+  return sendJSON(res, 200, { ok: true, devCode: code, expire: 300 });
+}
+async function handleSmsVerify(req, res) {
+  const b = await readBody(req);
+  const phone = String(b.phone || '').trim();
+  const code = String(b.code || '').trim();
+  const rec = smsCodes.get(phone);
+  if (!rec) return sendJSON(res, 400, { ok: false, error: '请先获取验证码' });
+  if (Date.now() > rec.expire) { smsCodes.delete(phone); return sendJSON(res, 400, { ok: false, error: '验证码已过期，请重新获取' }); }
+  if (rec.code !== code) return sendJSON(res, 400, { ok: false, error: '验证码错误' });
+  smsCodes.delete(phone);   // 一次性，验证后即失效
+  return sendJSON(res, 200, { ok: true });
+}
+
 /* ---- 公开：注册上报（让后台统计真实） ---- */
 async function handleRegister(req, res) {
   const b = await readBody(req);
@@ -379,7 +410,7 @@ async function handleRegister(req, res) {
   let u = s.users.find(x => x.name === name);
   if (!u) {
     u = { id: 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-          name, membership: b.membership || 'free', advancedUnlocked: false, testUsed: 0, registeredAt: Date.now(), lastActive: Date.now() };
+          name, phone: b.phone || '', membership: b.membership || 'free', advancedUnlocked: false, testUsed: 0, registeredAt: Date.now(), lastActive: Date.now() };
     s.users.push(u);
   } else {
     if (b.membership && b.membership !== 'none') u.membership = b.membership;
@@ -766,6 +797,8 @@ function handleUserProfile(req, res) {
       catch (e) { return sendJSON(res, 200, { fallback: true, cats: {} }); }
     }
     if (u === '/api/register' && req.method === 'POST') return await handleRegister(req, res);
+    if (u === '/api/sms/send' && req.method === 'POST') return await handleSmsSend(req, res);
+    if (u === '/api/sms/verify' && req.method === 'POST') return await handleSmsVerify(req, res);
     if (u === '/api/event' && req.method === 'POST') return await handleEvent(req, res);
     /* 运营配置 / 支付订单（公开） */
     if (u === '/api/ops' && req.method === 'GET') return handleOps(req, res);

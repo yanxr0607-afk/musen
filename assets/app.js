@@ -362,7 +362,7 @@
     return v ? v.id.replace('view-', '') : 'home';
   }
   function setModuleActive(view) {
-    const map = { home: 'home', chat: 'assess', quiz: 'assess', result: 'assess', detail: 'assess', tools: 'assess', daily: 'daily', cases: 'cases', member: 'member', takeorders: 'takeorders', startup: 'startup' };
+    const map = { home: 'home', chat: 'assess', quiz: 'assess', result: 'assess', detail: 'assess', tools: 'assess', daily: 'daily', cases: 'cases', member: 'member', takeorders: 'takeorders', startup: 'startup', trackrank: 'trackrank' };
     const active = map[view] || 'home';
     $$('.mnav-item, .tabbar-item').forEach(b => b.classList.toggle('active', b.dataset.go === active));
   }
@@ -400,6 +400,11 @@
       if (!$('#view-home').classList.contains('is-active')) showView('home');
       setModuleActive('startup');
       scrollToSection(document.getElementById('section-startup'));
+    }
+    else if (go === 'trackrank') {
+      if (!$('#view-home').classList.contains('is-active')) showView('home');
+      setModuleActive('trackrank');
+      scrollToSection(document.getElementById('section-trackrank'));
     }
   }
   function renderStepper(activeIdx) {
@@ -507,8 +512,8 @@
       c.addEventListener('click', go);
       c.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
     });
-    renderMarketOverview();
     renderTakeOrderBoard();
+    bindTakeOrderSearch();
     renderStartupBoard();
     renderTrackRank();
   }
@@ -536,7 +541,7 @@
     tickerOffset = 0;
     batch.className = 'ticker-batch';
     // 桌面端 3 条一排、手机端 1 条，切换步长与条数一致保证不漏案例
-    const getCount = () => window.matchMedia('(max-width: 560px)').matches ? 1 : 3;
+    const getCount = () => (window.matchMedia && window.matchMedia('(max-width: 560px)').matches) ? 1 : 3;
     const paint = () => { batch.innerHTML = buildTickerSeq(tickerOffset, getCount()); };
     paint();
     if (tickerTimer) clearInterval(tickerTimer);
@@ -563,8 +568,6 @@
       if (d && d.cats && Object.keys(d.cats).length) {
         _liveMarket = d.cats;
         _marketCache = null; // 重建以合并实时信号
-        const ov = document.getElementById('market-overview');
-        if (ov) renderMarketOverview();
         // 若当前正在查看赛道详情，实时更新行情卡中的「实时需求信号」块
         const db = document.getElementById('detail-body');
         if (db && state.currentTrack) {
@@ -671,25 +674,117 @@
       <p class="mk-note">* 数据基于平台真实案例与赛道库结构化，仅供参考，不承诺收益</p>
     </section>`;
   }
+  /* ====================== 首页「赛道行情概览」（按大类分组 · 每类百度文库式会员SOP门禁） ====================== */
+  function marketCaseMatch(catA, catB) {
+    if (!catA || !catB) return false;
+    if (catA === catB) return true;
+    const a = catA.split(' ')[0], b = catB.split(' ')[0];
+    return a && b && (catA.includes(b) || catB.includes(a));
+  }
   function renderMarketOverview() {
     const el = document.getElementById('market-overview');
     if (!el) return;
-    const list = Object.values(buildMarket()).sort((a, b) => b.heat - a.heat);
-    const platTag = (x, p) => {
-      const kw = '兼职' + (x.topTrack || x.cat);
-      const href = platSearchHref(p, kw);
-      const intlMark = isIntlPlat(p) ? '<i class="intl-badge" title="国际平台">国际站</i>' : '';
-      if (!href) return '<span class="mk-plat">' + esc(p) + intlMark + '</span>';
-      return '<a class="mk-plat mk-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + '（国际平台）搜「' + esc(kw) + '」相关单子">' + esc(p) + ' ↗' + intlMark + '</a>';
-    };
-    el.innerHTML = list.map(x => `
-      <article class="mk-overview-card">
-        <div class="mk-ov-cat">${esc(x.cat)}</div>
-        <div class="mk-ov-price">${x.pMin && x.pMax ? fmtMoney(x.pMin) + ' ~ ' + fmtMoney(x.pMax) + '/月' : '—'}</div>
-        <div class="mk-heat"><div class="mk-heat-bar"><i style="width:${x.heat}%"></i></div><span>热度 ${x.heat}</span></div>
-        <div class="mk-ov-plats">${x.platforms.slice(0, 10).map(p => platTag(x, p)).join('')}</div>
-        <div class="mk-ov-meta">${x.caseCount} 个真实案例 · ${x.trackCount} 条赛道</div>
-      </article>`).join('');
+    const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
+    const cases = (window.__BUNDLE_CASES || window.CASES || CASES || []);
+    const member = isUnlocked();
+    const riskTxt = ['极低', '低', '中', '高', '极高'];
+    // 按大类分组
+    const cats = [...new Set(tracks.map(t => t.cat))];
+    const total = tracks.length;
+
+    const catHtml = cats.map((cat, ci) => {
+      const catTracks = tracks.filter(t => t.cat === cat).sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
+      const mins = catTracks.map(t => t.incomeMin).filter(v => typeof v === 'number');
+      const maxs = catTracks.map(t => t.incomeMax).filter(v => typeof v === 'number');
+      const pMin = mins.length ? Math.min(...mins) : 0;
+      const pMax = maxs.length ? Math.max(...maxs) : 0;
+      const incomeRange = (pMin && pMax) ? ('¥' + fmtMoney(pMin) + ' ~ ¥' + fmtMoney(pMax) + '/月') : '—';
+
+      // 本类赛道排行行（点击展开简介/案例）
+      const trackRows = catTracks.map((t, i) => {
+        const rank = i + 1;
+        const noCls = rank <= 3 ? ' rank-no--' + rank : '';
+        const hotTag = rank <= 3
+          ? `<span class="rank-hot rank-hot--${rank}">${rank === 1 ? '沸' : rank === 2 ? '热' : '新'}</span>`
+          : '';
+        const incomeTxt = (t.incomeMin && t.incomeMax)
+          ? ('¥' + fmtMoney(t.incomeMin) + ' ~ ¥' + fmtMoney(t.incomeMax) + '/月')
+          : (t.income || '—');
+        const desc = esc(t.logic || t.ability || '');
+        const ability = esc(t.ability || '');
+        const aiPoint = esc(t.aiPoint || '');
+        const capital = (typeof t.capital === 'number') ? ('¥' + fmtMoney(t.capital)) : '—';
+        const payback = esc(t.paybackLabel || '—');
+        const risk = riskTxt[t.risk] || '—';
+        const relatedCases = cases.filter(c => marketCaseMatch(c.cat, cat)).slice(0, 3);
+        const caseHtml = relatedCases.length
+          ? `<div class="mk-cases"><div class="mk-cases-h">${icon('book-open', 15)} 相关真实案例</div><ul class="mk-case-list">${relatedCases.map(c => {
+              const oneLine = (c.result || '').split('。')[0] + '。';
+              return `<li><span class="mk-ci-num">#${c.id}</span><span class="mk-ci-title">${esc(c.title)}</span><em>${esc(oneLine)}</em></li>`;
+            }).join('')}</ul></div>`
+          : '';
+        return `<div class="rank-row" data-id="${esc(t.id)}" role="button" tabindex="0" aria-expanded="false">
+          <div class="rank-line">
+            <span class="rank-no${noCls}">${rank}</span>
+            <div class="rank-main">
+              <div class="rank-top"><span class="rank-title">${esc(t.name)}</span>${hotTag}</div>
+              <div class="rank-sub"><span class="rank-cat">${esc(t.cat)}</span><span class="rank-desc">${desc}</span></div>
+            </div>
+            <div class="rank-side">
+              <div class="rank-income">${incomeTxt}</div>
+              <div class="rank-label">预估月收益</div>
+            </div>
+            <span class="rank-toggle">${icon('chevron-down', 18)}</span>
+          </div>
+          <div class="rank-detail">
+            <div class="rank-facts">
+              <div class="rf"><span>启动资金</span><b>${capital}</b></div>
+              <div class="rf"><span>回本周期</span><b>${payback}</b></div>
+              <div class="rf"><span>风险等级</span><b>${risk}</b></div>
+            </div>
+            ${ability ? `<p class="rank-ability"><b>适合谁：</b>${ability}</p>` : ''}
+            ${aiPoint ? `<p class="rank-logic"><b>赛道逻辑：</b>${aiPoint}</p>` : ''}
+            ${caseHtml}
+          </div>
+        </div>`;
+      }).join('');
+
+      // 本类全部赛道 SOP 内容（百度文库式门禁：非会员遮罩+开通按钮，会员看全部）
+      const sopItems = catTracks.map(t => {
+        const steps = (t.coldStart || []).map((s, idx) => `<li><span class="sop-idx">${idx + 1}</span><span>${esc(s)}</span></li>`).join('');
+        const locked = esc(t.locked || '');
+        return `<div class="cat-sop-item">
+          <div class="cat-sop-name">${esc(t.name)}</div>
+          <ol class="sop-steps">${steps}</ol>
+          ${member && locked ? `<p class="sop-locked-note">${icon('crown', 14)} 会员专享：${locked}</p>` : ''}
+        </div>`;
+      }).join('');
+      const sopBlock = member
+        ? `<div class="cat-sop-list">${sopItems}</div>`
+        : `<div class="cat-sop-list sop-gated">${sopItems}<div class="sop-mask"><button class="btn btn-primary sop-unlock" type="button" data-open-member>${icon('lock', 15)} 开通会员，查看本类全部赛道落地 SOP →</button></div></div>`;
+
+      return `<section class="cat-group" data-cat="${esc(cat)}">
+        <button class="cat-head" type="button" aria-expanded="false">
+          <span class="cat-idx">${ci + 1}</span>
+          <div class="cat-h-main">
+            <div class="cat-h-title">${esc(cat)}</div>
+            <div class="cat-h-meta">${catTracks.length} 条赛道 · ${incomeRange}</div>
+          </div>
+          <span class="rank-toggle">${icon('chevron-down', 18)}</span>
+        </button>
+        <div class="cat-body">
+          <div class="rank-list cat-tracks">${trackRows}</div>
+          <div class="rank-sop-wrap">
+            <div class="rank-sop-h">${icon('rocket')} 本类赛道全流程 SOP（真实案例）</div>
+            ${sopBlock}
+          </div>
+        </div>
+      </section>`;
+    }).join('');
+
+    el.innerHTML = catHtml;
+    const cnt = document.getElementById('market-count');
+    if (cnt) cnt.textContent = total;
   }
 
   /* ====================== 首页「我想接单 · 接单直通车」 ====================== */
@@ -730,6 +825,80 @@
     }).join('');
   }
 
+  /* ====================== 接单直通车：关键词模糊查询跳转 ====================== */
+  function takeOrderFuzzy(kw, fields) {
+    const k = String(kw || '').trim().toLowerCase();
+    if (!k) return false;
+    return (fields || []).some(f => {
+      const s = String(f || '').toLowerCase();
+      return s && (s.includes(k) || k.includes(s));
+    });
+  }
+  function takeOrderLink(p, kw) {
+    const href = platSearchHref(p, kw);
+    const intlMark = isIntlPlat(p) ? '<i class="intl-badge" title="国际平台">国际站</i>' : '';
+    if (!href) return '<span class="to-plat">' + esc(p) + intlMark + '</span>';
+    return '<a class="to-plat to-plat--link" href="' + href + '" target="_blank" rel="noopener noreferrer" title="去 ' + esc(p) + ' 搜「' + esc(kw) + '」">' + esc(p) + ' ↗' + intlMark + '</a>';
+  }
+  function renderTakeOrderSearch(kw) {
+    const box = document.getElementById('to-search-results');
+    if (!box) return;
+    kw = String(kw || '').trim();
+    const grid = document.getElementById('take-order-grid');
+    if (!kw) { box.hidden = true; box.innerHTML = ''; if (grid) grid.style.display = ''; return; }
+    if (grid) grid.style.display = 'none';
+    const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
+    const matchedTracks = tracks.filter(t => takeOrderFuzzy(kw, [
+      t.name, t.search, t.cat, t.logic, t.ability,
+      (typeof TRACK_SEARCH !== 'undefined' && TRACK_SEARCH[t.id]) || ''
+    ]));
+    const allPlats = Array.from(new Set(Object.values((typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT) || {}).flat()));
+    const matchedPlats = allPlats.filter(p => takeOrderFuzzy(kw, [p]) && platHasLink(p));
+    let html = '';
+    if (matchedTracks.length) {
+      html += matchedTracks.map(t => {
+        const incomeTxt = (t.incomeMin && t.incomeMax) ? (fmtMoney(t.incomeMin) + ' ~ ' + fmtMoney(t.incomeMax) + '/月') : (t.income || '—');
+        const plats = ((typeof PLATFORMS_BY_CAT !== 'undefined' && PLATFORMS_BY_CAT[t.cat]) || []).filter(platHasLink).slice(0, 14);
+        const links = plats.length ? plats.map(p => takeOrderLink(p, kw)).join('') : '<span class="to-plat">该赛道暂无带直达搜索的平台</span>';
+        return `<article class="to-card to-card--search">
+          <div class="to-head"><span class="to-cat">${esc(t.cat)}</span><h3 class="to-name">${esc(t.name)}</h3></div>
+          <div class="to-income"><span class="to-income-label">预估月收益</span><b>${incomeTxt}</b></div>
+          <div class="to-plats-wrap">
+            <div class="to-plats-label">在以下平台搜「${esc(kw)}」直接接单</div>
+            <div class="to-plats">${links}</div>
+          </div>
+        </article>`;
+      }).join('');
+    }
+    if (matchedPlats.length) {
+      const chips = matchedPlats.slice(0, 24).map(p => takeOrderLink(p, kw)).join('');
+      html += `<div class="to-name-match">
+        <div class="to-plats-label">平台名命中「${esc(kw)}」· 直接去搜</div>
+        <div class="to-plats">${chips}</div>
+      </div>`;
+    }
+    if (!html) {
+      html = `<div class="to-search-empty">没找到和「${esc(kw)}」相关的赛道或平台 😶<br/>试试更通用的词，如：设计 / 写作 / 翻译 / 开发 / 配音</div>`;
+    }
+    box.innerHTML = html;
+    box.hidden = false;
+  }
+  function bindTakeOrderSearch() {
+    const inp = document.getElementById('to-search-input');
+    const clear = document.getElementById('to-search-clear');
+    if (!inp) return;
+    let timer = null;
+    const onInput = () => {
+      const v = inp.value;
+      if (clear) clear.hidden = !v;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => renderTakeOrderSearch(v), 160);
+    };
+    inp.addEventListener('input', onInput);
+    inp.addEventListener('compositionend', onInput);
+    if (clear) clear.addEventListener('click', () => { inp.value = ''; if (clear) clear.hidden = true; renderTakeOrderSearch(''); inp.focus(); });
+  }
+
   /* ====================== 首页「创业对接平台」 ====================== */
   function renderStartupBoard() {
     const el = document.getElementById('startup-grid');
@@ -765,10 +934,10 @@
     const el = document.getElementById('track-rank');
     if (!el) return;
     const tracks = (window.__BUNDLE_TRACKS || window.TRACKS || TRACKS || []);
-    const ranked = tracks.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
+    const all = tracks.slice().sort((a, b) => (b.incomeMax || 0) - (a.incomeMax || 0));
     const member = isUnlocked();
     const riskTxt = ['极低', '低', '中', '高', '极高'];
-    el.innerHTML = ranked.map((t, i) => {
+    const rowHtml = (t, i) => {
       const rank = i + 1;
       const noCls = rank <= 3 ? ' rank-no--' + rank : '';
       const hotTag = rank <= 3
@@ -818,9 +987,17 @@
           </div>
         </div>
       </div>`;
-    }).join('');
+    };
+    const top = all.slice(0, 10);
+    const rest = all.slice(10);
+    let html = top.map((t, i) => rowHtml(t, i)).join('');
+    if (rest.length) {
+      html += `<button class="rank-more-btn" type="button" data-rank-more aria-expanded="false"><span class="rm-label">展开剩余 ${rest.length} 条赛道</span> <span class="rm-chev">▾</span></button>`;
+      html += `<div class="rank-more" id="rank-more" hidden>${rest.map((t, i) => rowHtml(t, i + 10)).join('')}</div>`;
+    }
+    el.innerHTML = html;
     const cnt = document.getElementById('track-rank-count');
-    if (cnt) cnt.textContent = ranked.length;
+    if (cnt) cnt.textContent = top.length;
   }
 
   /* ====================== 模式选择 ====================== */
@@ -1302,7 +1479,7 @@ ${summary}
       ? '<span class="case-tier tier-basic">基础会员</span>'
       : '<span class="case-tier tier-free">免费</span>';
     if (!caseUnlocked(c)) {
-      return `<article class="case-card case-locked">
+      return `<article class="case-card case-locked" data-case-id="${esc(c.id)}">
         <div class="case-top"><span class="case-cat">${esc(c.cat)}</span>${badge}</div>
         <h3 class="case-title">${esc(c.title)}</h3>
         <div class="case-lock">
@@ -1312,7 +1489,7 @@ ${summary}
         </div>
       </article>`;
     }
-    return `<article class="case-card">
+    return `<article class="case-card" data-case-id="${esc(c.id)}">
       <div class="case-top">
         <span class="case-cat">${esc(c.cat)}</span>
         ${badge}
@@ -1329,6 +1506,37 @@ ${summary}
   }
   function bindCaseMember(root) {
     /* [data-open-member] 现由 init() 中的全局委托统一处理，避免重复绑定 */
+    bindCaseZoom(root);
+  }
+  function openCaseZoom(c) {
+    const modal = $('#case-zoom-modal'); if (!modal) return;
+    const tier = caseTier(c);
+    const badge = tier === 'basic'
+      ? '<span class="case-tier tier-basic">基础会员</span>'
+      : '<span class="case-tier tier-free">免费</span>';
+    const czCat = $('#cz-cat'); if (czCat) czCat.textContent = c.cat || '';
+    const czBadge = $('#cz-badge'); if (czBadge) czBadge.innerHTML = badge;
+    const czSrc = $('#cz-src'); if (czSrc) czSrc.innerHTML = '<span class="case-src">' + icon('file', 13) + ' ' + esc(c.source || '') + '</span>';
+    const czTitle = $('#cz-title'); if (czTitle) czTitle.textContent = c.title || '';
+    const czBody = $('#cz-body');
+    if (czBody) czBody.innerHTML =
+      `<div class="case-row"><span class="case-ico">${icon('message', 16)} 背景共鸣</span><p>${esc(c.background || '')}</p></div>` +
+      `<div class="case-row"><span class="case-ico">${icon('zap', 16)} 落地玩法</span><p>${esc(c.play || '')}</p></div>` +
+      `<div class="case-row"><span class="case-ico">${icon('bar-chart', 16)} 真实数据</span><p>${esc(c.result || '')}</p></div>` +
+      `<div class="case-row"><span class="case-ico case-ico-gold">${icon('sparkle', 16)} 可复用启发</span><p>${esc(c.insight || '')}</p></div>`;
+    modal.classList.add('open');
+  }
+  function closeCaseZoom() { const m = $('#case-zoom-modal'); if (m) m.classList.remove('open'); }
+  function bindCaseZoom(root) {
+    if (!root) return;
+    root.querySelectorAll('.case-card:not(.case-locked)').forEach(card => {
+      card.style.cursor = 'zoom-in';
+      card.addEventListener('click', () => {
+        const id = card.dataset.caseId; if (!id) return;
+        const c = liveCases().find(x => x.id === id);
+        if (c) openCaseZoom(c);
+      });
+    });
   }
   function renderCases() {
     const board = $('#case-board'); if (!board) return;
@@ -1940,11 +2148,11 @@ ${summary}
   /* ====================== 注册 / 登录（强制注册入口） ====================== */
   function openRegister() {
     const err = $('#register-err'); if (err) err.textContent = '';
-    const n = $('#reg-name'); if (n) n.value = '';
-    const p = $('#reg-pass'); if (p) p.value = '';
+    ['reg-phone', 'reg-code', 'reg-name', 'reg-pass'].forEach(id => { const e = $('#' + id); if (e) e.value = ''; });
     const sh = $('#reg-show'); if (sh) sh.checked = false;
     setPassType('password');
-    setTimeout(() => { if (n) n.focus(); }, 60);
+    resetSmsBtn('register');
+    setTimeout(() => { const p = $('#reg-phone'); if (p) p.focus(); }, 60);
     $('#register-modal').classList.add('open');
   }
   function setPassType(t) {
@@ -1952,36 +2160,143 @@ ${summary}
     if (a) a.type = t;
   }
   function closeRegister() { $('#register-modal').classList.remove('open'); }
-  function doRegister() {
-    const nameInp = $('#reg-name'); const name = (nameInp.value || '').trim();
-    const passInp = $('#reg-pass'); const pass = passInp.value || '';
-    const err = $('#register-err');
-    if (!name) { if (err) err.textContent = '请输入昵称'; return; }
-    if (name.length > 16) { if (err) err.textContent = '昵称不超过 16 字'; return; }
-    if (pass.length < 6 || pass.length > 20) { if (err) err.textContent = '密码需 6-20 位'; return; }
-
-    const accounts = loadAccounts();
-    let isLogin = false;
-    if (accounts[name]) {
-      // 已有账号 → 校验密码（登录）
-      if (accounts[name].hash !== hashPwd(name, pass)) { if (err) err.textContent = '密码错误，请重试'; return; }
-      isLogin = true;
+  function openLogin() {
+    const err = $('#login-err'); if (err) err.textContent = '';
+    ['login-phone', 'login-code', 'login-pass'].forEach(id => { const e = $('#' + id); if (e) e.value = ''; });
+    setLoginMode('code');
+    resetSmsBtn('login');
+    setTimeout(() => { const p = $('#login-phone'); if (p) p.focus(); }, 60);
+    $('#login-modal').classList.add('open');
+  }
+  function closeLogin() { $('#login-modal').classList.remove('open'); }
+  function setLoginMode(mode) {
+    const modal = $('#login-modal'); if (!modal) return;
+    modal.dataset.mode = mode;
+    const codeWrap = $('#login-code-wrap'), sendBtn = $('#login-send'), passWrap = $('#login-pass-wrap'), sw = $('#login-switch');
+    if (mode === 'code') {
+      if (codeWrap) codeWrap.style.display = '';
+      if (sendBtn) sendBtn.style.display = '';
+      if (passWrap) passWrap.style.display = 'none';
+      if (sw) sw.textContent = '使用密码登录 →';
     } else {
-      // 新账号 → 创建并默认免费会员
-      accounts[name] = { hash: hashPwd(name, pass), createdAt: Date.now() };
-      saveAccounts(accounts);
-      state.membership = 'free'; localStorage.setItem('opc_membership', 'free');
+      if (codeWrap) codeWrap.style.display = 'none';
+      if (sendBtn) sendBtn.style.display = 'none';
+      if (passWrap) passWrap.style.display = '';
+      if (sw) sw.textContent = '使用验证码登录 →';
     }
-
-    const hash = accounts[name].hash;
-    saveUser({ name: name });
-    reportEvent('register', name, hash);   // 上报后台（含哈希，后端可选存储）
-    closeRegister();
-    toast(isLogin ? '👋 欢迎回来，' + name + '！' : '🎉 注册成功，你已是免费会员！');
-    renderHome();
+  }
+  /* 手机验证码：请求发送 + 倒计时 */
+  const smsTimers = {};
+  function resetSmsBtn(prefix) {
+    const btn = $('#' + prefix + '-send'); if (!btn) return;
+    if (smsTimers[prefix]) { clearInterval(smsTimers[prefix]); smsTimers[prefix] = null; }
+    btn.disabled = false; btn.textContent = '获取验证码';
+  }
+  function sendSms(prefix) {
+    const phoneInp = $('#' + prefix + '-phone');
+    const phone = (phoneInp.value || '').trim();
+    const err = $('#' + prefix + '-err');
+    if (!/^1\d{10}$/.test(phone)) { if (err) err.textContent = '请输入正确的 11 位手机号'; return; }
+    const btn = $('#' + prefix + '-send');
+    if (btn) btn.disabled = true;
+    apiPost('/api/sms/send', { phone }).then(j => {
+      if (j && j.ok) {
+        if (err) err.textContent = j.devCode ? ('验证码已发送，演示验证码：' + j.devCode) : '验证码已发送，请查收短信';
+        toast('验证码已发送' + (j.devCode ? '（演示：' + j.devCode + '）' : ''));
+        startSmsCountdown(prefix);
+      } else {
+        if (err) err.textContent = (j && j.error) || '发送失败，请重试';
+        if (btn) btn.disabled = false;
+      }
+    }).catch(() => { if (err) err.textContent = '网络错误，发送失败'; if (btn) btn.disabled = false; });
+  }
+  function startSmsCountdown(prefix) {
+    const btn = $('#' + prefix + '-send'); if (!btn) return;
+    let left = 60; btn.disabled = true; btn.textContent = left + 's 后重发';
+    if (smsTimers[prefix]) clearInterval(smsTimers[prefix]);
+    smsTimers[prefix] = setInterval(() => {
+      left--;
+      if (left <= 0) { clearInterval(smsTimers[prefix]); smsTimers[prefix] = null; btn.disabled = false; btn.textContent = '获取验证码'; }
+      else btn.textContent = left + 's 后重发';
+    }, 1000);
+  }
+  async function verifySms(phone, code) {
+    const j = await apiPost('/api/sms/verify', { phone, code });
+    return !!(j && j.ok);
+  }
+  function afterAuth() {
     const pending = state.pendingAction; state.pendingAction = null;
     if (pending) pending();
-    else maybeShowPopup('afterRegister');   // 注册后触发运营弹窗（若后台配置）
+    else maybeShowPopup('afterRegister');
+  }
+  async function doRegister() {
+    const phone = ($('#reg-phone').value || '').trim();
+    const code = ($('#reg-code').value || '').trim();
+    const name = ($('#reg-name').value || '').trim();
+    const pass = $('#reg-pass').value || '';
+    const err = $('#register-err');
+    if (!/^1\d{10}$/.test(phone)) { if (err) err.textContent = '请输入正确的 11 位手机号'; return; }
+    if (!code) { if (err) err.textContent = '请输入验证码'; return; }
+    if (!name) { if (err) err.textContent = '请输入昵称'; return; }
+    if (name.length > 16) { if (err) err.textContent = '昵称不超过 16 字'; return; }
+    if (pass && (pass.length < 6 || pass.length > 20)) { if (err) err.textContent = '密码需 6-20 位'; return; }
+    if (err) err.textContent = '正在验证验证码…';
+    const ok = await verifySms(phone, code);
+    if (!ok) { if (err) err.textContent = '验证码错误或未获取'; return; }
+    const accounts = loadAccounts();
+    if (accounts[phone]) {
+      // 该手机号已注册 → 视为登录
+      const u = accounts[phone];
+      saveUser({ name: u.name || name, phone });
+      closeRegister();
+      toast('👋 欢迎回来，' + (u.name || name) + '！');
+      renderHome(); afterAuth(); return;
+    }
+    accounts[phone] = { hash: pass ? hashPwd(phone, pass) : '', name: name, createdAt: Date.now() };
+    saveAccounts(accounts);
+    state.membership = 'free'; localStorage.setItem('opc_membership', 'free');
+    saveUser({ name: name, phone: phone });
+    reportEvent('register', name, accounts[phone].hash);
+    closeRegister();
+    toast('🎉 注册成功，你已是免费会员！');
+    renderHome(); afterAuth();
+  }
+  async function doLogin() {
+    const phone = ($('#login-phone').value || '').trim();
+    const code = ($('#login-code').value || '').trim();
+    const pass = $('#login-pass').value || '';
+    const err = $('#login-err');
+    const mode = ($('#login-modal') && $('#login-modal').dataset.mode) || 'code';
+    if (!/^1\d{10}$/.test(phone)) { if (err) err.textContent = '请输入正确的 11 位手机号'; return; }
+    const accounts = loadAccounts();
+    if (mode === 'code') {
+      if (!code) { if (err) err.textContent = '请输入验证码'; return; }
+      if (err) err.textContent = '正在验证…';
+      const ok = await verifySms(phone, code);
+      if (!ok) { if (err) err.textContent = '验证码错误或未获取'; return; }
+    } else {
+      if (!pass) { if (err) err.textContent = '请输入密码'; return; }
+      const acc = accounts[phone];
+      if (!acc) { if (err) err.textContent = '该手机号尚未注册，请先注册'; return; }
+      if (acc.hash !== hashPwd(phone, pass)) { if (err) err.textContent = '密码错误'; return; }
+    }
+    let u = accounts[phone];
+    if (!u) {
+      // 验证码登录且首次使用 → 自动创建免费账号（验证码已校验，可信）
+      u = { hash: '', name: '用户' + phone.slice(-4), createdAt: Date.now() };
+      accounts[phone] = u; saveAccounts(accounts);
+      state.membership = 'free'; localStorage.setItem('opc_membership', 'free');
+      saveUser({ name: u.name, phone: phone });
+      reportEvent('register', u.name, '');
+      closeLogin();
+      toast('🎉 已为你创建免费账号');
+      renderHome(); afterAuth(); return;
+    }
+    const name = u.name || ('用户' + phone.slice(-4));
+    saveUser({ name: name, phone: phone });
+    closeLogin();
+    toast('👋 欢迎回来，' + name + '！');
+    renderHome(); afterAuth();
   }
   function renderAccount() {
     const box = $('#nav-account'); if (!box) return;
@@ -2128,8 +2443,13 @@ ${summary}
   /* ====================== 初始化 ====================== */
   function init() {
     mountIcons();
-    renderHome(); renderBanner(); renderStepper(0); renderCaseTicker();
-    loadLiveMarket();
+    // 任一渲染出错都不应中断后续事件绑定（否则登录/注册等核心交互会全部失效）
+    const safe = (fn, label) => { try { fn(); } catch (e) { console.error('[init] ' + label + ' 渲染失败：', e); } };
+    safe(renderHome, 'renderHome');
+    safe(renderBanner, 'renderBanner');
+    safe(() => renderStepper(0), 'renderStepper');
+    safe(renderCaseTicker, 'renderCaseTicker');
+    safe(loadLiveMarket, 'loadLiveMarket');
     $('#mode-chat').addEventListener('click', openChatMode);
     $('#mode-quiz').addEventListener('click', startQuiz);
     $('#hero-start').addEventListener('click', startQuiz);
@@ -2142,10 +2462,12 @@ ${summary}
       const om = e.target.closest('[data-open-member]');
       if (om) { e.preventDefault(); openMembership(); }
     });
-    /* 赛道热榜：点击行展开/收起赛道简介；会员 SOP 解锁按钮由上面的全局委托处理 */
-    const sr = document.getElementById('section-trackrank');
-    if (sr) {
-      sr.addEventListener('click', e => {
+    /* 赛道热榜 / 赛道行情概览：点击行展开/收起赛道简介；会员 SOP 解锁按钮由上面的全局委托处理 */
+    const rankSections = ['section-trackrank']; // 排名区域共用交互
+    rankSections.forEach(sid => {
+      const sec = document.getElementById(sid);
+      if (!sec) return;
+      sec.addEventListener('click', e => {
         if (!(e.target instanceof Element)) return;
         if (e.target.closest('[data-open-member]') || e.target.closest('a, button')) return;
         const row = e.target.closest('.rank-row');
@@ -2153,7 +2475,7 @@ ${summary}
         const open = row.classList.toggle('is-open');
         row.setAttribute('aria-expanded', open ? 'true' : 'false');
       });
-      sr.addEventListener('keydown', e => {
+      sec.addEventListener('keydown', e => {
         if (e.key !== 'Enter' && e.key !== ' ') return;
         const row = e.target.closest('.rank-row');
         if (!row || e.target.closest('[data-open-member], a, button')) return;
@@ -2161,7 +2483,32 @@ ${summary}
         const open = row.classList.toggle('is-open');
         row.setAttribute('aria-expanded', open ? 'true' : 'false');
       });
-    }
+      // 分类分组头：点击展开/收起整类（含本类赛道排行 + 会员SOP门禁）
+      sec.addEventListener('click', e => {
+        if (!(e.target instanceof Element)) return;
+        const head = e.target.closest('.cat-head');
+        if (!head) return;
+        const group = head.closest('.cat-group');
+        if (!group) return;
+        const open = group.classList.toggle('is-open');
+        head.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      // 「展开剩余 N 条赛道」按钮：折叠/展开 TOP 10 之后的赛道
+      sec.addEventListener('click', e => {
+        if (!(e.target instanceof Element)) return;
+        const moreBtn = e.target.closest('[data-rank-more]');
+        if (!moreBtn) return;
+        const box = document.getElementById('rank-more');
+        if (!box) return;
+        const willShow = box.hasAttribute('hidden');
+        if (willShow) box.removeAttribute('hidden'); else box.setAttribute('hidden', '');
+        moreBtn.setAttribute('aria-expanded', willShow ? 'true' : 'false');
+        const label = moreBtn.querySelector('.rm-label');
+        const chev = moreBtn.querySelector('.rm-chev');
+        if (label) label.textContent = willShow ? ('收起剩余 ' + box.children.length + ' 条赛道') : ('展开剩余 ' + box.children.length + ' 条赛道');
+        if (chev) chev.textContent = willShow ? '▴' : '▾';
+      });
+    });
     refreshMemberLabel();
     const xs = $('#nav-start3'); if (xs) xs.addEventListener('click', goHome);
     $('#quiz-home').addEventListener('click', goHome);
@@ -2191,13 +2538,21 @@ ${summary}
     $('#chat-send').addEventListener('click', sendChat);
     ci.addEventListener('input', () => autoGrow(ci));
     ci.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } });
-    renderDaily($('#daily-board-home'), null, 6);
-    renderCasesHome();
+    safe(() => renderDaily($('#daily-board-home'), null, 6), 'renderDaily');
+    safe(renderCasesHome, 'renderCasesHome');
     $('#member-close').addEventListener('click', closeMembership);
     $('#member-modal').addEventListener('click', e => { if (e.target.id === 'member-modal') closeMembership(); });
     $('#register-close').addEventListener('click', closeRegister);
     $('#register-modal').addEventListener('click', e => { if (e.target.id === 'register-modal') closeRegister(); });
     $('#register-go').addEventListener('click', doRegister);
+    $('#login-close').addEventListener('click', closeLogin);
+    $('#login-modal').addEventListener('click', e => { if (e.target.id === 'login-modal') closeLogin(); });
+    $('#login-go').addEventListener('click', doLogin);
+    $('#reg-send').addEventListener('click', () => sendSms('register'));
+    $('#login-send').addEventListener('click', () => sendSms('login'));
+    const toLogin = $('#to-login'); if (toLogin) toLogin.addEventListener('click', e => { e.preventDefault(); closeRegister(); openLogin(); });
+    const toReg = $('#to-register'); if (toReg) toReg.addEventListener('click', e => { e.preventDefault(); closeLogin(); openRegister(); });
+    const loginSw = $('#login-switch'); if (loginSw) loginSw.addEventListener('click', e => { e.preventDefault(); const m = $('#login-modal'); setLoginMode((m && m.dataset.mode === 'code') ? 'pass' : 'code'); });
     /* 运营弹窗 + 支付弹窗 */
     $('#ops-popup-close').addEventListener('click', closeOpsPopup);
     $('#ops-popup-modal').addEventListener('click', e => { if (e.target.id === 'ops-popup-modal') closeOpsPopup(); });
@@ -2207,10 +2562,24 @@ ${summary}
     const regInp = $('#reg-name'); if (regInp) regInp.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
     const regPass = $('#reg-pass'); if (regPass) regPass.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
     const regShow = $('#reg-show'); if (regShow) regShow.addEventListener('change', e => setPassType(e.target.checked ? 'text' : 'password'));
-    renderAccount();
-    ensureValidMembership();   // 有账号但 membership 异常时回退 free
-    refreshMemberLabel();      // 确保标签同步
-    syncMembership();          // 向服务端同步会员状态（后台开通后前端自动生效）
+    const regPhone = $('#reg-phone'); if (regPhone) regPhone.addEventListener('keydown', e => { if (e.key === 'Enter') $('#reg-code').focus(); });
+    const regCode = $('#reg-code'); if (regCode) regCode.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
+    const loginPhone = $('#login-phone'); if (loginPhone) loginPhone.addEventListener('keydown', e => { if (e.key === 'Enter') $('#login-code').focus(); });
+    const loginCode = $('#login-code'); if (loginCode) loginCode.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    const loginPass = $('#login-pass'); if (loginPass) loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+    $('#case-zoom-close').addEventListener('click', closeCaseZoom);
+    $('#case-zoom-modal').addEventListener('click', e => { if (e.target.id === 'case-zoom-modal') closeCaseZoom(); });
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      ['register-modal', 'login-modal', 'case-zoom-modal'].forEach(id => {
+        const m = document.getElementById(id);
+        if (m && m.classList.contains('open')) m.classList.remove('open');
+      });
+    });
+    safe(renderAccount, 'renderAccount');
+    safe(ensureValidMembership, 'ensureValidMembership');
+    safe(refreshMemberLabel, 'refreshMemberLabel');
+    safe(syncMembership, 'syncMembership');   // 向服务端同步会员状态（后台开通后前端自动生效）
     setInterval(syncMembership, 30000);  // 后台开通会员后，前端每 30 秒自动感知并刷新
     $('#go-tools').addEventListener('click', () => { renderTools(); showView('tools'); });
     $('#tools-back').addEventListener('click', () => showView('detail'));

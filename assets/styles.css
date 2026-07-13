@@ -585,6 +585,13 @@ button { font-family: inherit; cursor: pointer; }
 .register-box .reg-show-line input { width: auto; padding: 0; }
 .register-err { color: #ff8585; font-size: 13px; min-height: 18px; margin: 6px 0 0; text-align: left; }
 .register-note { font-size: 12px; color: var(--muted); margin-top: 14px; line-height: 1.6; }
+.register-note a { color: var(--primary-d); font-weight: 700; text-decoration: none; cursor: pointer; }
+.register-note a:hover { text-decoration: underline; }
+.reg-code-line { gap: 6px !important; }
+.reg-code-row { display: flex; gap: 8px; align-items: stretch; }
+.reg-code-row input { flex: 1; min-width: 0; letter-spacing: 2px; }
+.reg-code-row .btn { white-space: nowrap; flex: none; }
+.reg-code-row .btn:disabled { opacity: .55; cursor: not-allowed; }
 .cors-cmd { background: #0B0F1A; color: #aed581; padding: 12px 14px; border-radius: 8px; font-size: 12px; font-family: 'Cascadia Code','Fira Code',Consolas,monospace; overflow-x: auto; white-space: pre-wrap; word-break: break-all; line-height: 1.5; border: 1px solid var(--line); }
 .chat-status.client { background: rgba(34,211,238,.14); color: var(--accent); }
 
@@ -691,6 +698,15 @@ button { font-family: inherit; cursor: pointer; }
 .tier-free { color: var(--muted); background: rgba(148,163,184,.12); border: 1px solid var(--line); }
 .case-locked { border-style: dashed; }
 .case-locked::before { background: linear-gradient(var(--line), var(--line)); opacity: .5; }
+
+/* 案例放大查看弹窗 */
+.case-zoom-box { max-width: 640px; }
+.case-zoom-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.case-zoom-title { font-size: 22px; font-weight: 800; color: var(--ink); line-height: 1.4; margin: 12px 0 18px; }
+.case-zoom-body { display: flex; flex-direction: column; gap: 16px; }
+.case-zoom-body .case-row { align-items: flex-start; gap: 12px; }
+.case-zoom-body .case-ico { width: 84px; font-size: 13px; }
+.case-zoom-body .case-row p { font-size: 15px; line-height: 1.75; color: var(--ink); opacity: .92; }
 .case-lock { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 18px 10px 8px; border-top: 1px dashed var(--line); margin-top: auto; }
 .case-lock-ico { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: rgba(167,139,250,.14); color: #c4b5fd; }
 .case-lock-ico .ico { width: 18px; height: 18px; }
@@ -817,6 +833,22 @@ button { font-family: inherit; cursor: pointer; }
 .mk-live-prices .mk-plat { background: rgba(52,211,153,.12); border-color: rgba(52,211,153,.35); color: var(--ok); }
 
 /* ============ 首页「我想接单 · 接单直通车」 ============ */
+/* 接单直通车：关键词模糊查询跳转 */
+.to-search { margin: 6px 0 4px; display: flex; flex-direction: column; gap: 8px; }
+.to-search-box { position: relative; display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 999px; padding: 4px 16px; transition: border-color .2s, box-shadow .2s; }
+.to-search-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(245,158,11,.16); }
+.to-search-ico { font-size: 16px; opacity: .8; }
+.to-search-input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 15px; padding: 11px 0; }
+.to-search-input::placeholder { color: var(--muted); }
+.to-search-clear { border: 0; background: var(--surface-2); color: var(--muted); width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-size: 13px; display: grid; place-items: center; transition: .15s; }
+.to-search-clear:hover { color: var(--ink); background: var(--line); }
+.to-search-hint { font-size: 12.5px; color: var(--muted); padding-left: 4px; }
+.to-search-results { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+.to-card--search { animation: toFade .22s ease; }
+@keyframes toFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.to-name-match { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px 18px; }
+.to-search-empty { text-align: center; color: var(--muted); font-size: 14px; line-height: 1.8; padding: 30px 10px; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius-sm); }
+
 .take-order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; margin-top: 8px; }
 .to-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px; transition: .18s; }
 .to-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow); }
@@ -982,4 +1014,54 @@ button { font-family: inherit; cursor: pointer; }
   .rank-title { font-size: 14px; }
   .rank-desc { font-size: 11.5px; }
   .rank-toggle .ico { width: 16px; height: 16px; }
+}
+
+/* TOP 10 之后的赛道折叠区（默认收起，点击「展开剩余 N 条赛道」展开） */
+.rank-more-btn {
+  align-self: center; margin: 12px auto 2px; padding: 9px 18px;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px;
+  color: var(--primary-d); font-size: 13px; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; transition: all .2s ease;
+}
+.rank-more-btn:hover { border-color: var(--primary); background: var(--primary-soft); transform: translateY(-1px); }
+.rank-more-btn .rm-chev { font-size: 12px; transition: transform .2s ease; }
+.rank-more[hidden] { display: none; }
+.rank-more { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.rank-more .rank-row { opacity: .82; }
+.rank-more .rank-row:hover { opacity: 1; }
+
+/* ============ 首页「赛道行情概览」按大类分组 ============ */
+.cat-group {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  overflow: hidden; margin-bottom: 12px; transition: border-color .18s, background .18s;
+}
+.cat-group.is-open { border-color: var(--primary); background: var(--surface-2); }
+.cat-head {
+  width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  background: transparent; border: 0; color: var(--ink); cursor: pointer; text-align: left; outline: none;
+  font-family: inherit;
+}
+.cat-head:hover { background: var(--surface-2); }
+.cat-head:focus-visible { box-shadow: 0 0 0 3px rgba(245,158,11,.22); }
+.cat-idx {
+  flex: none; width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
+  font-size: 14px; font-weight: 800; color: var(--primary-d); background: var(--primary-soft); font-variant-numeric: tabular-nums;
+}
+.cat-h-main { flex: 1 1 auto; min-width: 0; }
+.cat-h-title { font-size: 16px; font-weight: 800; color: var(--ink); }
+.cat-h-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.cat-head .rank-toggle { flex: none; color: var(--muted); transition: transform .22s ease; display: grid; place-items: center; }
+.cat-group.is-open .cat-head .rank-toggle { transform: rotate(180deg); color: var(--primary); }
+.cat-body { display: none; padding: 4px 16px 18px; border-top: 1px dashed var(--line); }
+.cat-group.is-open .cat-body { display: block; }
+.cat-tracks { margin-top: 12px; }
+.cat-tracks .rank-row { background: var(--surface-solid); }
+.cat-sop-list { display: flex; flex-direction: column; gap: 14px; }
+.cat-sop-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: var(--surface-solid); }
+.cat-sop-name { font-size: 14px; font-weight: 700; color: var(--ink); margin-bottom: 9px; }
+.cat-sop-item .sop-steps { gap: 8px; }
+@media (max-width: 560px) {
+  .cat-head { gap: 10px; padding: 12px; }
+  .cat-h-title { font-size: 15px; }
+  .cat-body { padding: 4px 12px 16px; }
 }
