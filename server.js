@@ -421,8 +421,8 @@ async function handleSmsSend(req, res) {
   if (!/^1\d{10}$/.test(phone)) return sendJSON(res, 400, { ok: false, error: '手机号格式不正确' });
   const now = Date.now();
   const prev = smsCodes.get(phone);
-  if (prev && now - prev.sentAt < 60000) {
-    const left = Math.ceil((60000 - (now - prev.sentAt)) / 1000);
+  if (prev && now - prev.sentAt < 30000) {
+    const left = Math.ceil((30000 - (now - prev.sentAt)) / 1000);
     return sendJSON(res, 429, { ok: false, error: '验证码发送过于频繁，请 ' + left + ' 秒后再试', retryIn: left });
   }
   const code = genSmsCode();

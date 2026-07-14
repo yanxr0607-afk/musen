@@ -2259,7 +2259,7 @@ ${summary}
   }
   function startSmsCountdown(prefix) {
     const btn = $('#' + prefix + '-send'); if (!btn) return;
-    let left = 60; btn.disabled = true; btn.textContent = left + 's 后重发';
+    let left = 30; btn.disabled = true; btn.textContent = left + 's 后重发';
     if (smsTimers[prefix]) clearInterval(smsTimers[prefix]);
     smsTimers[prefix] = setInterval(() => {
       left--;
