@@ -1,6 +1,6 @@
 // OPC H5 Web App — Service Worker
 // 策略：核心资源预缓存；导航走「网络优先 + 离线回退缓存」；静态资源走「网络优先 + 离线回退缓存」（每次部署自动拉新，避免旧 app.js 缓存导致功能不生效）。
-const CACHE = 'opc-h5-v2';
+const CACHE = 'opc-h5-v3';
 const CORE = [
   './',
   './index.html',

@@ -2245,7 +2245,7 @@ ${summary}
         if (j.devCode) {
           if (err) err.textContent = '演示模式：验证码已生成并显示在下方，可直接点「一键填入」';
           showDemoCode(prefix, j.devCode);
-          toast('验证码已生成（演示）');
+          toast('演示验证码：' + j.devCode + '（点「一键填入」即可）');
         } else {
           if (err) err.textContent = '验证码已发送，请查收手机短信';
           toast('验证码已发送');
@@ -2595,7 +2595,7 @@ ${summary}
     $('#login-close').addEventListener('click', closeLogin);
     $('#login-modal').addEventListener('click', e => { if (e.target.id === 'login-modal') closeLogin(); });
     $('#login-go').addEventListener('click', doLogin);
-    $('#reg-send').addEventListener('click', () => sendSms('register'));
+    $('#reg-send').addEventListener('click', () => sendSms('reg'));
     $('#login-send').addEventListener('click', () => sendSms('login'));
     const toLogin = $('#to-login'); if (toLogin) toLogin.addEventListener('click', e => { e.preventDefault(); closeRegister(); openLogin(); });
     const toReg = $('#to-register'); if (toReg) toReg.addEventListener('click', e => { e.preventDefault(); closeLogin(); openRegister(); });
