@@ -373,6 +373,48 @@ function checkAuth(req) {
 /* ---- 公开：手机验证码（内存存储，无真实短信网关时返回 devCode 供演示） ---- */
 const smsCodes = new Map();   // phone -> { code, expire, sentAt }
 function genSmsCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
+/* —— 真实短信网关（腾讯云 SMS，env 驱动；未配置时自动降级为演示模式）—— */
+let tencentSmsClient = null; // null=未初始化, false=不可用, object=可用
+function getTencentSmsClient() {
+  if (tencentSmsClient !== null) return tencentSmsClient;
+  const sid = process.env.TENCENT_SMS_SECRET_ID, skey = process.env.TENCENT_SMS_SECRET_KEY;
+  if (!sid || !skey) { tencentSmsClient = false; return false; }
+  try {
+    const pkg = require('tencentcloud-sdk-nodejs-sms');
+    const sms = pkg.sms || pkg;
+    tencentSmsClient = new sms.v20210111.Client({
+      credential: { secretId: sid, secretKey: skey },
+      region: process.env.TENCENT_SMS_REGION || 'ap-guangzhou',
+      profile: { httpProfile: { endpoint: 'sms.tencentcloudapi.com' } },
+    });
+  } catch (e) {
+    console.error('[sms] 腾讯云短信 SDK 未安装，已降级为演示模式：', e && e.message);
+    tencentSmsClient = false;
+  }
+  return tencentSmsClient;
+}
+async function sendRealSms(phone, code) {
+  const appId = process.env.TENCENT_SMS_SDK_APP_ID, sign = process.env.TENCENT_SMS_SIGN, tpl = process.env.TENCENT_SMS_TEMPLATE_ID;
+  if (!appId || !sign || !tpl) return false;
+  const client = getTencentSmsClient();
+  if (!client) return false;
+  try {
+    const res = await client.SendSms({
+      PhoneNumberSet: ['+86' + phone],
+      SmsSdkAppId: appId,
+      SignName: sign,
+      TemplateId: tpl,
+      TemplateParamSet: [code, '5'], // 参数顺序：验证码、有效期(分钟)
+    });
+    const st = res && res.SendStatusSet && res.SendStatusSet[0];
+    if (st && st.Code === 'Ok') return true;
+    console.error('[sms] 腾讯云发送失败:', JSON.stringify(st || res));
+    return false;
+  } catch (e) {
+    console.error('[sms] 腾讯云发送异常:', e && e.message);
+    return false;
+  }
+}
 async function handleSmsSend(req, res) {
   const b = await readBody(req);
   const phone = String(b.phone || '').trim();
@@ -385,8 +427,13 @@ async function handleSmsSend(req, res) {
   }
   const code = genSmsCode();
   smsCodes.set(phone, { code, expire: now + 5 * 60 * 1000, sentAt: now });
-  console.log('[sms] 已向 ' + phone + ' 下发验证码（演示）：' + code);
-  // 无真实短信网关：返回 devCode 供前端演示流程走通；生产环境应改为只返回 {ok:true}
+  const real = await sendRealSms(phone, code);
+  if (real) {
+    console.log('[sms] 已向 ' + phone + ' 真实下发验证码');
+    return sendJSON(res, 200, { ok: true, expire: 300 });
+  }
+  // 未接真实网关：降级为演示模式，把验证码回传前端（生产接入网关后应去掉 devCode）
+  console.log('[sms] 已向 ' + phone + ' 下发验证码（演示模式）：' + code);
   return sendJSON(res, 200, { ok: true, devCode: code, expire: 300 });
 }
 async function handleSmsVerify(req, res) {

@@ -1052,8 +1052,10 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      if (!r.ok) return { online: false };
-      return await r.json();
+      let j = null;
+      try { j = await r.json(); } catch (e) { j = null; }
+      if (!r.ok) return Object.assign({ ok: false, status: r.status }, j || {});
+      return j || {};
     } catch (e) { return { online: false }; }
   }
   async function callChatAPI(text) { return apiPost('/api/chat', { message: text }); }
@@ -1680,15 +1682,17 @@ ${summary}
     const isAnchor = q.id === 'anchor';
     const qTitle = (isAnchor && a.tier === 'advanced') ? '确认你的创业方向（可修改重选）' : q.title;
     const qHint = (isAnchor && a.tier === 'advanced') ? '进阶测将基于你选的方向深挖专属题' : q.hint;
-    const answered = !!a.answers[q.id];
+    const ans = a.answers[q.id];
+    const answered = q.multi ? (Array.isArray(ans) && ans.length > 0) : !!ans;
+    const multiTip = q.multi ? '可多选，至少选 1 项' : '';
     const optionsHtml = q.options.map(o => {
-      const selected = a.answers[q.id] === o.value;
+      const selected = q.multi ? (Array.isArray(ans) && ans.includes(o.value)) : ans === o.value;
       return `<button class="opt ${selected ? 'opt-on' : ''}" data-value="${o.value}" role="option" aria-selected="${!!selected}">
-                <span class="opt-mark">${q.single ? '○' : '☐'}</span>${o.label}</button>`;
+                <span class="opt-mark">${q.multi ? '☐' : '○'}</span>${o.label}</button>`;
     }).join('');
     $('#quiz-card').innerHTML = `
       <div class="quiz-progress"><div class="quiz-bar" style="width:${Math.round((a.step) / total * 100)}%"></div></div>
-      <div class="quiz-meta"><b>${stageName}</b> · 第 ${a.step + 1} / ${total} 题${qHint ? ` · <em>${esc(qHint)}</em>` : ''}</div>
+      <div class="quiz-meta"><b>${stageName}</b> · 第 ${a.step + 1} / ${total} 题${qHint ? ` · <em>${esc(qHint)}</em>` : ''}${multiTip ? ` · <em>${multiTip}</em>` : ''}</div>
       <h2 class="quiz-q">${esc(qTitle)}</h2>
       <div class="opt-list" role="listbox">${optionsHtml}</div>
       <div class="quiz-actions">
@@ -1703,10 +1707,18 @@ ${summary}
     const a = state.assess;
     const val = btn.dataset.value;
     if (q.id === 'anchor') a.cat = val; // 锁定大类，专属题随大类切换
-    a.answers[q.id] = val;
-    $$('#quiz-card .opt').forEach(b => b.classList.remove('opt-on'));
-    btn.classList.add('opt-on');
-    $('#q-next').disabled = false;
+    if (q.multi) {
+      let arr = Array.isArray(a.answers[q.id]) ? a.answers[q.id].slice() : [];
+      if (arr.includes(val)) arr = arr.filter(v => v !== val); else arr.push(val);
+      a.answers[q.id] = arr;
+      btn.classList.toggle('opt-on');
+    } else {
+      a.answers[q.id] = val;
+      $$('#quiz-card .opt').forEach(b => b.classList.remove('opt-on'));
+      btn.classList.add('opt-on');
+    }
+    const ans = a.answers[q.id];
+    $('#q-next').disabled = !(q.multi ? (Array.isArray(ans) && ans.length > 0) : ans);
     if (q.id === 'anchor' && a.step === 0) setTimeout(() => onAssessNext(q), 220);
   }
   function onAssessBack() {
@@ -1733,7 +1745,14 @@ ${summary}
     });
     (ASSESS.specific[cat] || []).forEach(q => {
       const v = answers[q.id]; if (!v) return;
-      const ord = 'ABCD'.indexOf(v);
+      let ord;
+      if (Array.isArray(v)) {
+        const ords = v.map(x => 'ABCD'.indexOf(x)).filter(i => i >= 0);
+        if (!ords.length) return;
+        ord = Math.max.apply(null, ords);
+      } else {
+        ord = 'ABCD'.indexOf(v); if (ord < 0) return;
+      }
       score += 2 + ord; // A=2 … D=5
     });
     return Math.max(60, Math.min(99, score));
@@ -1772,9 +1791,14 @@ ${summary}
         <p class="res-case-meta">${esc(d.repCase.source || '')}</p>
         <p class="res-case-result">${esc(d.repCase.result || '')}</p>
       </div>` : '';
+    const catChips = ASSESS.cats.map(c => {
+      const on = c.id === d.catObj.id;
+      return `<div class="cat-chip ${on ? 'cat-chip--on' : ''}">${esc(c.name)}</div>`;
+    }).join('');
     $('#result-intro').innerHTML = `
       <div class="result-avatar">${icon('zap')}</div>
-      <p>初测完成！你最匹配的赛道大类是 <b>${esc(d.catObj.name)}</b>，综合匹配度 <b>${d.match}%</b>。</p>`;
+      <p>初测完成！你最匹配的赛道大类是 <b>${esc(d.catObj.name)}</b>，综合匹配度 <b>${d.match}%</b>。</p>
+      <div class="cat-showcase" aria-label="七大类型赛道">${catChips}</div>`;
     $('#result-list').innerHTML = `
       <article class="result-card cat-result">
         <div class="result-head">
@@ -2192,6 +2216,23 @@ ${summary}
     if (smsTimers[prefix]) { clearInterval(smsTimers[prefix]); smsTimers[prefix] = null; }
     btn.disabled = false; btn.textContent = '获取验证码';
   }
+  function showDemoCode(prefix, code) {
+    const row = $('#' + prefix + '-send');
+    if (!row) return;
+    const box = $('#' + prefix + '-demo');
+    if (box) { box.querySelector('.sms-demo-code').textContent = code; return; }
+    const wrap = document.createElement('div');
+    wrap.id = prefix + '-demo';
+    wrap.className = 'sms-demo';
+    wrap.innerHTML = `<span class="sms-demo-tip">演示模式未接短信网关，验证码：</span><b class="sms-demo-code">${code}</b><button type="button" class="sms-demo-fill" id="${prefix}-fill">一键填入</button>`;
+    const rowWrap = row.parentNode; // .reg-code-row
+    if (rowWrap && rowWrap.parentNode) rowWrap.parentNode.insertBefore(wrap, rowWrap.nextSibling);
+    else row.parentNode.insertBefore(wrap, row.nextSibling);
+    const fill = $('#' + prefix + '-fill');
+    if (fill) fill.addEventListener('click', () => {
+      const inp = $('#' + prefix + '-code'); if (inp) { inp.value = code; inp.focus(); }
+    });
+  }
   function sendSms(prefix) {
     const phoneInp = $('#' + prefix + '-phone');
     const phone = (phoneInp.value || '').trim();
@@ -2200,12 +2241,18 @@ ${summary}
     const btn = $('#' + prefix + '-send');
     if (btn) btn.disabled = true;
     apiPost('/api/sms/send', { phone }).then(j => {
-      if (j && j.ok) {
-        if (err) err.textContent = j.devCode ? ('验证码已发送，演示验证码：' + j.devCode) : '验证码已发送，请查收短信';
-        toast('验证码已发送' + (j.devCode ? '（演示：' + j.devCode + '）' : ''));
+      if (j && (j.ok || j.devCode)) {
+        if (j.devCode) {
+          if (err) err.textContent = '演示模式：验证码已生成并显示在下方，可直接点「一键填入」';
+          showDemoCode(prefix, j.devCode);
+          toast('验证码已生成（演示）');
+        } else {
+          if (err) err.textContent = '验证码已发送，请查收手机短信';
+          toast('验证码已发送');
+        }
         startSmsCountdown(prefix);
       } else {
-        if (err) err.textContent = (j && j.error) || '发送失败，请重试';
+        if (err) err.textContent = (j && (j.error || j.message)) || (j && j.online === false ? '网络错误，发送失败' : '发送失败，请重试');
         if (btn) btn.disabled = false;
       }
     }).catch(() => { if (err) err.textContent = '网络错误，发送失败'; if (btn) btn.disabled = false; });

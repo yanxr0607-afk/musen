@@ -89,7 +89,7 @@
           { value: 'C', label: '企业合规文案 / 内容审核' },
           { value: 'D', label: '通用数据处理 / 提示词定制' },
         ] },
-      { id: 'ai_s2', title: '你更擅长哪类能力？', required: true, single: true,
+      { id: 'ai_s2', title: '你更擅长哪类能力？（可多选）', required: true, single: false, multi: true,
         options: [
           { value: 'A', label: '写文案 / 内容产出（copy）' },
           { value: 'B', label: '拍剪视频 / 数字人（video）' },
@@ -111,7 +111,7 @@
           { value: 'C', label: '短剧 / 短视频剪辑' },
           { value: 'D', label: '儿童绘本 / 故事定制' },
         ] },
-      { id: 'ct_s2', title: '你的核心能力偏向？', required: true, single: true,
+      { id: 'ct_s2', title: '你的核心能力偏向？（可多选）', required: true, single: false, multi: true,
         options: [
           { value: 'A', label: '声音 / 配音表现' },
           { value: 'B', label: '写作 / 行业研究' },
@@ -133,7 +133,7 @@
           { value: 'C', label: '知识产权 / 资质办理' },
           { value: 'D', label: '简历优化 / 面试辅导' },
         ] },
-      { id: 'bz_s2', title: '你的专业背景更偏？', required: true, single: true,
+      { id: 'bz_s2', title: '你的专业背景更偏？（可多选）', required: true, single: false, multi: true,
         options: [
           { value: 'A', label: '文秘 / 行政 / 写作' },
           { value: 'B', label: '财务 / 数据处理' },
@@ -154,7 +154,7 @@
           { value: 'B', label: '建筑 / 装修效果图出图' },
           { value: 'C', label: '定制 IP 表情包 / 品牌视觉素材' },
         ] },
-      { id: 'vs_s2', title: '你目前的能力组合是？', required: true, single: true,
+      { id: 'vs_s2', title: '你目前的能力组合是？（可多选）', required: true, single: false, multi: true,
         options: [
           { value: 'A', label: '只会设计软件（PS / AI / 可画）' },
           { value: 'B', label: '设计 + 文案（能写卖点）' },
@@ -176,7 +176,7 @@
           { value: 'C', label: '美业 / 教培 / 生活服务' },
           { value: 'D', label: '各类门店综合代运营' },
         ] },
-      { id: 'lc_s2', title: '你的核心能力更偏？', required: true, single: true,
+      { id: 'lc_s2', title: '你的核心能力更偏？（可多选）', required: true, single: false, multi: true,
         options: [
           { value: 'A', label: '写文案 / 做内容（copy）' },
           { value: 'B', label: '谈单 / 销售（sales）' },
@@ -198,7 +198,7 @@
           { value: 'C', label: '行业报告 / 方案售卖' },
           { value: 'D', label: '素材模板 / 短剧 / 绘本' },
         ] },
-      { id: 'em_s2', title: '你的核心能力更偏？', required: true, single: true,
+      { id: 'em_s2', title: '你的核心能力更偏？（可多选）', required: true, single: false, multi: true,
         options: [
           { value: 'A', label: '倾听 / 沟通（sales）' },
           { value: 'B', label: '写作 / 研究（copy）' },
@@ -220,7 +220,7 @@
           { value: 'C', label: '上门宠物照料' },
           { value: 'D', label: '微 SaaS / 小程序 / 3D 开发' },
         ] },
-      { id: 'lf_s2', title: '你的能力偏向？', required: true, single: true,
+      { id: 'lf_s2', title: '你的能力偏向？（可多选）', required: true, single: false, multi: true,
         options: [
           { value: 'A', label: '和人打交道 / 服务（sales）' },
           { value: 'B', label: '写代码 / 开发（dev）' },
