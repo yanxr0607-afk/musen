@@ -451,20 +451,35 @@ async function handleSmsVerify(req, res) {
 /* ---- 公开：注册上报（让后台统计真实） ---- */
 async function handleRegister(req, res) {
   const b = await readBody(req);
+  const phone = String(b.phone || '').trim();
+  if (!/^1\d{10}$/.test(phone)) return sendJSON(res, 400, { error: 'invalid phone' });
   const name = String(b.name || '').slice(0, 32);
-  if (!name) return sendJSON(res, 400, { error: 'empty name' });
   const s = loadStore();
-  let u = s.users.find(x => x.name === name);
+  let u = s.users.find(x => x.phone === phone);   // 手机号唯一身份（修复同号变多账号）
   if (!u) {
     u = { id: 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-          name, phone: b.phone || '', membership: b.membership || 'free', advancedUnlocked: false, testUsed: 0, registeredAt: Date.now(), lastActive: Date.now() };
+          name: name || ('用户' + phone.slice(-4)), phone,
+          membership: b.membership || 'free', advancedUnlocked: false, testUsed: 0, registeredAt: Date.now(), lastActive: Date.now() };
     s.users.push(u);
   } else {
+    if (name) u.name = name;                        // 昵称允许更新
     if (b.membership && b.membership !== 'none') u.membership = b.membership;
     u.lastActive = Date.now();
   }
   if (b.pwd) u.pwd = b.pwd;   // 演示：存储前端传来的哈希（生产应由后端自行哈希，勿存明文）
   saveStore();
+  return sendJSON(res, 200, { ok: true, user: u });
+}
+
+/* ---- 公开：登录（手机号必须已注册） ---- */
+async function handleLogin(req, res) {
+  const b = await readBody(req);
+  const phone = String(b.phone || '').trim();
+  if (!/^1\d{10}$/.test(phone)) return sendJSON(res, 400, { error: 'invalid phone' });
+  const s = loadStore();
+  const u = s.users.find(x => x.phone === phone);
+  if (!u) return sendJSON(res, 404, { ok: false, error: '该手机号尚未注册，请先注册' });
+  u.lastActive = Date.now(); saveStore();
   return sendJSON(res, 200, { ok: true, user: u });
 }
 /* ---- 公开：行为事件（测评完成等） ---- */
@@ -844,6 +859,7 @@ function handleUserProfile(req, res) {
       catch (e) { return sendJSON(res, 200, { fallback: true, cats: {} }); }
     }
     if (u === '/api/register' && req.method === 'POST') return await handleRegister(req, res);
+    if (u === '/api/login' && req.method === 'POST') return await handleLogin(req, res);
     if (u === '/api/sms/send' && req.method === 'POST') return await handleSmsSend(req, res);
     if (u === '/api/sms/verify' && req.method === 'POST') return await handleSmsVerify(req, res);
     if (u === '/api/event' && req.method === 'POST') return await handleEvent(req, res);

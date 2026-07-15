@@ -2290,20 +2290,13 @@ ${summary}
     if (err) err.textContent = '正在验证验证码…';
     const ok = await verifySms(phone, code);
     if (!ok) { if (err) err.textContent = '验证码错误或未获取'; return; }
-    const accounts = loadAccounts();
-    if (accounts[phone]) {
-      // 该手机号已注册 → 视为登录
-      const u = accounts[phone];
-      saveUser({ name: u.name || name, phone });
-      closeRegister();
-      toast('👋 欢迎回来，' + (u.name || name) + '！');
-      renderHome(); afterAuth(); return;
-    }
-    accounts[phone] = { hash: pass ? hashPwd(phone, pass) : '', name: name, createdAt: Date.now() };
-    saveAccounts(accounts);
-    state.membership = 'free'; localStorage.setItem('opc_membership', 'free');
-    saveUser({ name: name, phone: phone });
-    reportEvent('register', name, accounts[phone].hash);
+    const j = await apiPost('/api/register', { phone, name, pwd: pass ? hashPwd(phone, pass) : '' });
+    if (!j || j.online === false) { if (err) err.textContent = '网络异常，请稍后重试'; return; }
+    if (!j.ok) { if (err) err.textContent = j.error || '注册失败'; return; }
+    const u = j.user;
+    state.membership = u.membership || 'free'; localStorage.setItem('opc_membership', state.membership);
+    saveUser({ id: u.id, name: u.name, phone: u.phone });
+    reportEvent('register', u.name, '');
     closeRegister();
     toast('🎉 注册成功，你已是免费会员！');
     renderHome(); afterAuth();
@@ -2315,34 +2308,23 @@ ${summary}
     const err = $('#login-err');
     const mode = ($('#login-modal') && $('#login-modal').dataset.mode) || 'code';
     if (!/^1\d{10}$/.test(phone)) { if (err) err.textContent = '请输入正确的 11 位手机号'; return; }
-    const accounts = loadAccounts();
+    if (err) err.textContent = '正在验证…';
     if (mode === 'code') {
       if (!code) { if (err) err.textContent = '请输入验证码'; return; }
-      if (err) err.textContent = '正在验证…';
       const ok = await verifySms(phone, code);
       if (!ok) { if (err) err.textContent = '验证码错误或未获取'; return; }
-    } else {
-      if (!pass) { if (err) err.textContent = '请输入密码'; return; }
-      const acc = accounts[phone];
-      if (!acc) { if (err) err.textContent = '该手机号尚未注册，请先注册'; return; }
-      if (acc.hash !== hashPwd(phone, pass)) { if (err) err.textContent = '密码错误'; return; }
+    } else if (!pass) { if (err) err.textContent = '请输入密码'; return; }
+    const j = await apiPost('/api/login', { phone });
+    if (!j || j.online === false) { if (err) err.textContent = '网络异常，请稍后重试'; return; }
+    if (!j.ok) { if (err) err.textContent = j.error || '登录失败'; return; }   // 未注册 → 提示去注册（修复未注册号可登录）
+    const u = j.user;
+    if (mode === 'pass') {
+      if (u.pwd && u.pwd !== hashPwd(phone, pass)) { if (err) err.textContent = '密码错误'; return; }
     }
-    let u = accounts[phone];
-    if (!u) {
-      // 验证码登录且首次使用 → 自动创建免费账号（验证码已校验，可信）
-      u = { hash: '', name: '用户' + phone.slice(-4), createdAt: Date.now() };
-      accounts[phone] = u; saveAccounts(accounts);
-      state.membership = 'free'; localStorage.setItem('opc_membership', 'free');
-      saveUser({ name: u.name, phone: phone });
-      reportEvent('register', u.name, '');
-      closeLogin();
-      toast('🎉 已为你创建免费账号');
-      renderHome(); afterAuth(); return;
-    }
-    const name = u.name || ('用户' + phone.slice(-4));
-    saveUser({ name: name, phone: phone });
+    state.membership = u.membership || 'free'; localStorage.setItem('opc_membership', state.membership);
+    saveUser({ id: u.id, name: u.name, phone: u.phone });
     closeLogin();
-    toast('👋 欢迎回来，' + name + '！');
+    toast('👋 欢迎回来，' + u.name + '！');
     renderHome(); afterAuth();
   }
   function renderAccount() {
