@@ -702,8 +702,8 @@ async function handleAdminSetMembership(req, res) {
   const s = loadStore();
   const u = s.users.find(x => x.name === name);
   if (!u) return sendJSON(res, 404, { error: 'no user' });
-  if (membership === 'basic' || membership === 'pro') u.advancedUnlocked = true; // 基础版/专业版含进阶测评
-  else u.membership = membership;
+  u.membership = membership;
+  u.advancedUnlocked = (membership === 'basic' || membership === 'pro'); // 基础版/专业版含进阶测评
   u.lastActive = Date.now();
   saveStore();
   return sendJSON(res, 200, { ok: true, user: u });
