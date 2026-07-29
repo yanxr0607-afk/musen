@@ -1073,7 +1073,7 @@
   async function refreshChatQuota() {
     const el = $('#chat-ai-quota'); if (!el || !state.user) return;
     try {
-      const r = await apiFetch('/api/ai/usage?name=' + encodeURIComponent(state.user.name));
+      const r = await apiFetch('/api/ai/usage?name=' + encodeURIComponent(state.user.name) + '&_=' + Date.now());
       const j = await r.json();
       if (j && j.ok && j.limit) {
         const pct = Math.min(100, Math.round(j.used / j.limit * 100));
@@ -1084,7 +1084,7 @@
   }
   async function checkChatStatus() {
     let proxyOnline = false;
-    try { const r = await apiFetch('/api/status'); const j = await r.json(); proxyOnline = !!(j && j.online); } catch (e) { proxyOnline = false; }
+    try { const r = await apiFetch('/api/status?_=' + Date.now()); const j = await r.json(); proxyOnline = !!(j && j.online); } catch (e) { proxyOnline = false; }
     updateChatStatus(proxyOnline ? 'proxy' : 'off');
     if (state.user && proxyOnline) refreshChatQuota();
   }
@@ -2438,12 +2438,12 @@ ${summary}
     if (qu) qu.textContent = '—';
     if (bar) bar.style.width = '0%';
     try {
-      const r = await apiFetch('/api/status'); const j = await r.json();
+      const r = await apiFetch('/api/status?_=' + Date.now()); const j = await r.json();
       if (st) { st.textContent = (j && j.online) ? ('✅ 在线（' + (j.model || '混元') + '）') : '❌ 暂未开放'; st.style.color = (j && j.online) ? 'var(--ok, #2ecc71)' : 'var(--danger, #e74c3c)'; }
     } catch (e) { if (st) { st.textContent = '❌ 无法连接'; st.style.color = 'var(--danger, #e74c3c)'; } }
     if (state.user) {
       try {
-        const r2 = await apiFetch('/api/ai/usage?name=' + encodeURIComponent(state.user.name));
+        const r2 = await apiFetch('/api/ai/usage?name=' + encodeURIComponent(state.user.name) + '&_=' + Date.now());
         const u = await r2.json();
         if (u && u.ok) {
           if (pl) pl.textContent = ({ free: '免费版', basic: '基础版', pro: '专业版' })[u.plan] || u.plan;
@@ -2686,7 +2686,7 @@ ${summary}
   async function checkBackend() {
     const el = $('#backend-status');
     try {
-      const r = await apiFetch('/api/status', { method: 'GET' });
+      const r = await apiFetch('/api/status?_=' + Date.now(), { method: 'GET' });
       backendOnline = r.ok;
     } catch (e) { backendOnline = false; }
     if (!el) return;

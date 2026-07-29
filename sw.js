@@ -1,6 +1,6 @@
 // OPC H5 Web App — Service Worker
 // 策略：核心资源预缓存；导航走「网络优先 + 离线回退缓存」；静态资源走「网络优先 + 离线回退缓存」（每次部署自动拉新，避免旧 app.js 缓存导致功能不生效）。
-const CACHE = 'opc-h5-v3';
+const CACHE = 'opc-h5-v4';
 const CORE = [
   './',
   './index.html',
@@ -33,6 +33,7 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // 第三方（如 busuanzi）不拦截
+  if (url.pathname.startsWith('/api/')) return;    // API 接口不缓存，避免旧状态被 SW 拦截
 
   if (req.mode === 'navigate') {
     e.respondWith(
