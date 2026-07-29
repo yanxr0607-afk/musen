@@ -2336,10 +2336,10 @@ ${summary}
   /* ====================== 落地工具 / 经营助手 ====================== */
   function renderTools() {
     if (!requireRegister()) return;
-    if (!isUnlocked()) {
+    if (state.membership !== 'pro') {        // 落地工具箱仅专业版可用，区分基础版
       $('#tools-body').innerHTML = `
         <div class="gate"><div class="gate-icon">${icon('lock')}</div><h3>落地工具箱与经营助手为会员专享</h3>
-        <p>开通专业版 / 高端版后，可使用投入产出计算器、AI 启动方案、经营复盘等全部工具。</p>
+        <p>开通专业版后，可使用投入产出计算器、经营助手与月度复盘等全部工具。</p>
         <button class="btn btn-primary" id="gate-member">开通会员解锁 →</button></div>`;
       $('#gate-member').addEventListener('click', openMembership);
       return;
