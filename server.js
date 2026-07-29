@@ -846,7 +846,9 @@ function handleUserProfile(req, res) {
   const s = loadStore();
   const u = s.users.find(x => x.name === name);
   if (!u) return sendJSON(res, 200, { ok: true, membership: null });     // 未注册
-  return sendJSON(res, 200, { ok: true, membership: u.membership || 'free', name: u.name, advancedUnlocked: !!u.advancedUnlocked });
+  // 进阶解锁随 基础版/专业版 自动生效，免费用户一律视为未解锁（以会员等级为准，自动修复历史污染数据）
+  const effectiveAdv = (u.membership === 'basic' || u.membership === 'pro');
+  return sendJSON(res, 200, { ok: true, membership: u.membership || 'free', name: u.name, advancedUnlocked: effectiveAdv });
 }
 
     /* 公开内容 / 上报 */

@@ -80,7 +80,7 @@
     chatHasResult: false,
   };
 
-  function loadMembership() { return localStorage.getItem('opc_membership') || 'none'; }
+  function loadMembership() { const m = localStorage.getItem('opc_membership'); return (m && m !== 'none') ? m : 'free'; }
   function isUnlocked() { return UNLOCKED.includes(state.membership); }
   /* 安全网：有账号但 membership 异常时，回退到 free */
   function ensureValidMembership() {
@@ -95,17 +95,24 @@
   /* 账号体系（纯前端 localStorage，无后端；分享链接可直接用） */
   function loadUser() { try { return JSON.parse(localStorage.getItem('opc_user') || 'null'); } catch (e) { return null; } }
   function isRegistered() { return !!state.user; }
-  function saveUser(u) { state.user = u; try { localStorage.setItem('opc_user', JSON.stringify(u)); } catch (e) {} renderAccount(); refreshMemberLabel(); }
+  function saveUser(u) {
+    state.user = u;
+    if (u && u.membership) { state.membership = u.membership; try { localStorage.setItem('opc_membership', u.membership); } catch (e) {} }
+    try { localStorage.setItem('opc_user', JSON.stringify(u)); } catch (e) {}
+    renderAccount(); refreshMemberLabel();
+  }
   function logoutUser() { state.user = null; try { localStorage.removeItem('opc_user'); } catch (e) {} renderAccount(); refreshMemberLabel(); if (isUnlocked()) { renderHome(); } }
   function refreshMemberLabel() {
     const ml = $('#mnav-member-label'); if (!ml) return;
-    const plan = PLANS.find(p => p.id === state.membership);
-    if (plan) ml.textContent = plan.name;                 // 免费版/基础版/专业版/高端版，按当前套餐名显示
-    else if (isRegistered()) ml.textContent = '升级会员';
-    else ml.textContent = '开通会员';
+    if (state.membership === 'free') {
+      ml.textContent = isRegistered() ? '免费版' : '开通会员';
+    } else {
+      const plan = PLANS.find(p => p.id === state.membership);
+      ml.textContent = plan ? plan.name : (isRegistered() ? '升级会员' : '开通会员');
+    }
     // 底部 TabBar 会员标签（付费套餐显示套餐名，其余统一「会员」）
     const tml = $('#tabbar-member-label');
-    if (tml) tml.textContent = (plan && state.membership !== 'free') ? plan.name : '会员';
+    if (tml) { const plan = PLANS.find(p => p.id === state.membership); tml.textContent = (plan && state.membership !== 'free') ? plan.name : '会员'; }
   }
 
   /* 向服务端同步会员状态：后台人工开通后，前端自动感知并更新 localStorage */
@@ -126,7 +133,8 @@
         toast('🎉 会员状态已更新：' + (PLANS.find(p => p.id === serverMem) || {}).name);
         console.log('[sync] membership changed: ' + prev + ' → ' + serverMem);
       }
-      const serverAdv = !!res.advancedUnlocked;
+      // 进阶解锁仅对 基础版/专业版 生效；免费用户强制视为未解锁（防御历史污染数据）
+      const serverAdv = (state.membership === 'basic' || state.membership === 'pro') ? !!res.advancedUnlocked : false;
       if (serverAdv !== state.advancedUnlocked) {
         state.advancedUnlocked = serverAdv;
         if (serverAdv) toast('🎯 进阶测评已开通，去「开始测评」即可做精准测！');
@@ -1669,6 +1677,7 @@ ${summary}
     renderAssess();
   }
   function startAdvanced() {
+    if (!canTakeAdvanced()) { openAdvancedGate(); return; }
     const cat = state.lastInitialCat || null;
     state.assess = { tier: 'advanced', cat: cat, step: 0, answers: {} };
     if (cat) state.assess.answers.anchor = cat; // 预选方向，可改重选
