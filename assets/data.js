@@ -526,7 +526,7 @@ const PLANS = [
     cta: '开通基础版'
   },
   {
-    id: 'pro', name: '专业版', price: '29.9 元', period: '/ 月',
+    id: 'pro', name: '专业版', price: '13.6 元', period: '/ 月',
     highlight: true, target: '核心付费层，主要收入来源',
     benefits: ['基础版全部权益', '落地测算工具箱', '一人公司经营助手', 'AI 启动方案生成', '月度赛道更新'],
     cta: '开通专业版'
