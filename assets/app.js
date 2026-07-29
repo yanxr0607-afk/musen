@@ -1066,251 +1066,77 @@
       return j || {};
     } catch (e) { return { online: false }; }
   }
-  function currentName() { return (state.user && state.user.name) ? state.user.name : ''; }
-  async function callChatAPI(text) { return apiPost('/api/chat', { message: text, name: currentName() }); }
-  async function callTrackInfo(topic) { return apiPost('/api/track-info', { topic, name: currentName() }); }
-
-  async function refreshChatQuota() {
-    const el = $('#chat-ai-quota'); if (!el || !state.user) return;
-    try {
-      const r = await apiFetch('/api/ai/usage?name=' + encodeURIComponent(state.user.name) + '&_=' + Date.now());
-      const j = await r.json();
-      if (j && j.ok && j.limit) {
-        const pct = Math.min(100, Math.round(j.used / j.limit * 100));
-        el.textContent = '本月算力 ' + (j.used / 1000).toFixed(1) + 'k / ' + (j.limit / 1000) + 'k';
-        el.title = '本月已用 ' + pct + '%';
-      }
-    } catch (e) {}
-  }
-  async function checkChatStatus() {
-    let proxyOnline = false;
-    try { const r = await apiFetch('/api/status?_=' + Date.now()); const j = await r.json(); proxyOnline = !!(j && j.online); } catch (e) { proxyOnline = false; }
-    updateChatStatus(proxyOnline ? 'proxy' : 'off');
-    if (state.user && proxyOnline) refreshChatQuota();
-  }
-  function updateChatStatus(mode) {
+  /* ====================== 本地智能顾问（纯前端规则引擎，基于赛道库 + 案例库） ====================== */
+  async function checkChatStatus() { updateChatStatus(); }
+  function updateChatStatus() {
     const el = $('#chat-status'); if (!el) return;
-    if (mode === 'proxy') { el.textContent = 'AI 顾问 · 在线'; el.className = 'chat-status on'; }
-    else { el.textContent = 'AI 顾问 · 离线'; el.className = 'chat-status off'; }
+    el.textContent = '本地智能顾问 · 在线';
+    el.className = 'chat-status on';
   }
 
-  /* ====================== 客户端直连混元（用于静态部署 / 分享链接） ====================== */
-  function loadClientCfg() {
-    try { return JSON.parse(localStorage.getItem('opc_hunyuan_cfg') || 'null'); } catch (e) { return null; }
-  }
-  function hasClientKey() { const c = loadClientCfg(); return !!(c && c.key); }
-
-  function clientSystemPrompt() {
-    const summary = liveTracks().map(t =>
-      `- ${t.name}（id:${t.id}｜分类:${t.cat}｜启动${t.capital}元起｜月收益${t.incomeMin}-${t.incomeMax}元｜${t.friendly}）`).join('\n');
-    return `你是"不做牛马 · 一人公司赛道选型顾问"。我们已经收录了以下赛道：
-${summary}
-
-任务：用户会用一段话描述自己的情况和想做的方向。请严格只输出 JSON，格式如下：
-{
-  "reply": "面向用户的口语化建议（中文、像创业伙伴、200 字内，可点名推荐库中赛道，也可给出起步动作）",
-  "knownTracks": ["匹配到的、库中存在赛道 id 数组，可空"],
-  "unknownTopics": ["用户想做的、但不在上面库里的话题 / 赛道名数组，可空"]
-}
-规则：
-1. 若用户需求能对应库中某赛道，把其 id 放入 knownTracks，并在 reply 中给出口语化建议。
-2. 若用户问到库里没有的赛道 / 生意，在 unknownTopics 写入主题词，并在 reply 中基于你的知识直接给出"如何起步、最低配置、风险、首单周期"的实用建议。
-3. 始终使用中文，语气积极、专业；不要输出 JSON 以外的任何内容。${getSystemExtra() ? '\n\n【运营额外话术要求】\n' + getSystemExtra() : ''}`;
-  }
-  function clientTrackInfoPrompt(topic) {
-    return `请围绕主题"${topic}"生成一份结构化一人公司赛道调研卡。严格只输出 JSON：
-{
-  "name": "赛道名称", "cat": "分类", "capital": 数字, "incomeMin": 数字, "incomeMax": 数字,
-  "risk": 1至3, "aiReq": 1至3, "target": ["适配人群1","适配人群2"], "skills": ["技能1","技能2"],
-  "resourcesIdeal": ["资源1","资源2"], "ability": "核心能力要求", "logic": "商业模式一句话",
-  "aiPoint": "AI 如何提效", "friendly": "新手友好度", "paybackSpeed": "回本速度", "paybackLabel": "X 个月内",
-  "config": "最低配置清单", "firstOrder": "首单周期", "coldStart": ["第一步","第二步","第三步"],
-  "donts": ["千万别做1","千万别做2","千万别做3"], "opportunity": "今日商机", "painpoint": "今日痛点",
-  "locked": "会员解锁的完整落地资料"
-}
-必须中文；字段齐全；coldStart 与 donts 各 3 条；不要输出 JSON 以外的任何内容。`;
-  }
-  function parseJSONSafe(s) {
-    if (!s) return null;
-    try { return JSON.parse(s); } catch (e) {}
-    const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (fence) { try { return JSON.parse(fence[1]); } catch (e) {} }
-    const b = s.indexOf('{'), e = s.lastIndexOf('}');
-    if (b >= 0 && e > b) { try { return JSON.parse(s.slice(b, e + 1)); } catch (e) {} }
-    return null;
-  }
-  async function callHunyuanRaw(messages, cfg, temperature) {
-    const body = { model: cfg.model || 'hunyuan-turbo', messages, temperature: temperature != null ? temperature : 0.7, response_format: { type: 'json_object' } };
-    const res = await fetch(cfg.url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-  }
-  async function callHunyuanDirectChat(text) {
-    const cfg = loadClientCfg();
-    const content = await callHunyuanRaw(
-      [{ role: 'system', content: clientSystemPrompt() }, { role: 'user', content: text }], cfg, 0.7);
-    const parsed = parseJSONSafe(content);
-    if (!parsed) return { online: true, reply: content.slice(0, 600) };
-    return {
-      online: true,
-      reply: String(parsed.reply || ''),
-      knownTracks: (Array.isArray(parsed.knownTracks) ? parsed.knownTracks : []).filter(id => liveTracks().find(t => t.id === id)).slice(0, 3),
-      unknownTopics: Array.isArray(parsed.unknownTopics) ? parsed.unknownTopics : [],
-    };
-  }
-  async function callHunyuanDirectTrackInfo(topic) {
-    const cfg = loadClientCfg();
-    const content = await callHunyuanRaw(
-      [{ role: 'system', content: '你是严谨的赛道研究员，只输出符合要求的中文 JSON，不要任何解释。' },
-       { role: 'user', content: clientTrackInfoPrompt(topic) }], cfg, 0.8);
-    const parsed = parseJSONSafe(content);
-    if (!parsed || !parsed.name) return { online: true, parseError: true };
-    return { online: true, profile: parsed };
+  /* 本地回答主流程：解析 → 匹配赛道 → 渲染结果 → 关联案例库 */
+  function localAnswer(parsed, summary, text) {
+    if (Object.keys(state.chatAnswers).length === 0) {
+      appendBotSafe('我还没太读懂你的描述～可以再具体一点吗？比如你现在的身份、每天能投入多少时间、大概有多少启动资金、有没有擅长的技能，我就能帮你从已有赛道库里匹配啦。');
+      return;
+    }
+    const results = computeMatch(Object.assign({}, state.chatAnswers));
+    renderChatResult(results, summary);
+    renderLocalUnknown(text);
   }
 
-  function renderUpgradeHint() {
-    const bar = h('<div class="chat-actions"><button class="btn btn-primary" id="chat-upgrade">升级专业版解锁算力 →</button></div>');
-    $('#chat-log').appendChild(bar);
-    const b = $('#chat-upgrade'); if (b) b.addEventListener('click', () => pickPlan('pro'));
+  /* 根据用户输入，从实战案例库里检索相关案例并内联展示（用现有资料自动回答） */
+  function renderLocalUnknown(text) {
+    const cases = searchCasesLocal(text, 3);
+    if (!cases.length) return;
+    const cards = cases.map(c => `
+      <div class="lc-card" data-case-id="${c.id}">
+        <div class="lc-cat">${esc(c.cat)}</div>
+        <div class="lc-title">${esc(c.title)}</div>
+        <div class="lc-insight">${esc(c.insight)}</div>
+        <div class="lc-more">查看完整案例 →</div>
+      </div>`).join('');
+    const wrap = h(`<div class="chat-actions"><div class="lc-head">${icon('sparkle')} 相关实战案例（来自案例库）</div>${cards}</div>`);
+    $('#chat-log').appendChild(wrap);
+    $('#chat-log').scrollTop = $('#chat-log').scrollHeight;
+    wrap.querySelectorAll('.lc-card').forEach(card => card.addEventListener('click', () => {
+      const c = liveCases().find(x => x.id === Number(card.dataset.caseId));
+      if (c) openCaseZoom(c);
+    }));
   }
+
+  /* 案例库本地关键词检索 */
+  function searchCasesLocal(text, n) {
+    const STOP = new Set('的 了 我 你 他 她 它 们 想 要 做 一个 怎么 如何 可以 吗 呢 吧 有 是 在 和 与 及 也 都 就 还 不 没 能 会 把 被 给 让 这 那 什么 哪个 哪些 现在 每天 大概 一些 一点 自己 我们 他们 她们 你们 您 请 帮忙 帮我 推荐 适合 想做 打算 准备 计划 希望 建议 选择'.split(/\s+/));
+    const tk = (text || '').toLowerCase().split(/[\s,，。、；;：:！!？?""''（）()【】\[\]「」<>《》\/\\|+＝=_\-]/).filter(w => w.length >= 2 && !STOP.has(w));
+    if (!tk.length) return [];
+    const scored = liveCases().map(c => {
+      const hay = (c.title + ' ' + c.cat + ' ' + (c.background || '') + ' ' + (c.play || '') + ' ' + (c.insight || '')).toLowerCase();
+      let score = 0;
+      tk.forEach(w => { if (hay.indexOf(w) >= 0) score++; });
+      return { c, score };
+    }).filter(x => x.score > 0).sort((a, b) => b.score - a.score);
+    return scored.slice(0, n).map(x => x.c);
+  }
+
+  /* 客户端直连混元相关逻辑已移除：顾问改为纯本地规则引擎，不依赖任何外部 Key / API */
   function sendChat() {
     const ta = $('#chat-input'); const text = ta.value.trim();
     if (!text) return;
     if (!canTest() && !state.chatHasResult) { showTestLimit(); return; }
-    if (!state.user) { appendBotSafe('💡 登录后即可使用 AI 创业顾问为你精准匹配赛道。'); openLogin(); return; }
+    if (!state.user) { appendBotSafe('💡 登录后即可使用创业顾问，基于已有赛道库与案例库为你匹配方向。'); openLogin(); return; }
     appendUser(text); ta.value = ''; autoGrow(ta);
     const typing = showTyping();
     const parsed = parseFreeText(text);
     mergeChat(parsed);
     const summary = summarize(parsed);
-    callChatAPI(text).then(res => {
+    setTimeout(() => {
       typing.remove();
-      if (res && res.quotaExceeded) {
-        updateChatStatus('proxy');
-        appendBotSafe('⚠️ 本月 AI 算力已用完（' + (res.limit / 1000) + 'k token）。升级专业版可解锁更多算力，或下月自动重置。');
-        renderUpgradeHint();
-        refreshChatQuota();
-        return;
-      }
-      const online = res && res.online && !res.error;
-      if (online) {
-        updateChatStatus('proxy');
-        if (res.aiUsed != null) refreshChatQuota();
-        renderApiResult(res, parsed, summary);
-      } else {
-        updateChatStatus('off');
-        if (res && res.needLogin) { appendBotSafe('💡 请先登录后再使用 AI 顾问。'); openLogin(); }
-        else { appendBotSafe('（AI 顾问暂未开放，请稍后再试）'); }
-      }
-    }).catch(() => {
-      typing.remove();
-      updateChatStatus('off');
-      appendBotSafe('（网络异常，AI 顾问暂时不可用）');
-    });
+      localAnswer(parsed, summary, text);
+    }, 360);
   }
 
-  /* 本地规则引擎兜底（无 Key / 接口异常时） */
-  function fallbackChat(summary) {
-    if (Object.keys(state.chatAnswers).length === 0) {
-      appendBot('我还没太读懂你的描述～可以再具体一点吗？比如你现在的身份、每天能投入多少时间、大概有多少启动资金、有没有擅长的技能，我就能帮你匹配啦。');
-      return;
-    }
-    const results = computeMatch(Object.assign({}, state.chatAnswers));
-    renderChatResult(results, summary, []);
-  }
-
-  /* 渲染混元接口返回（代理 / 直连共用） */
-  function renderApiResult(res, parsed, summary) {
-    if (res && res.reply) appendBotSafe(res.reply);
-    const known = arr(res.knownTracks);
-    const unknown = arr(res.unknownTopics);
-    if (Object.keys(parsed).length) {
-      const results = computeMatch(Object.assign({}, state.chatAnswers));
-      renderChatResult(results, summary, unknown);
-    } else if (known.length) {
-      renderChatKnownChips(known, unknown);
-    } else if (unknown.length) {
-      renderUnknownCard(unknown);
-    } else {
-      appendBotSafe('可以再具体说说你的身份、每天能投入的时间、启动预算或想做的方向，我帮你精准匹配～');
-    }
-  }
-
-  /* 库外赛道：AI 补充卡 + 生成完整调研卡 */
-  function renderUnknownCard(topics) {
-    if (!topics || !topics.length) return;
-    const card = h(`<div class="unknown-card">
-      <div class="unknown-head">${icon('cpu')} AI 补充 · 库外赛道</div>
-      <p>你提到的「${esc(topics.join('、'))}」暂未收录进我们的多个赛道库。我可以调用混元大模型单独为你生成一份调研卡（含起步配置、风险与首单周期）。</p>
-      <button class="btn btn-primary btn-sm" id="gen-synthetic">用 AI 生成「${esc(topics[0])}」完整赛道卡 →</button>
-    </div>`);
-    $('#chat-log').appendChild(card);
-    $('#chat-log').scrollTop = $('#chat-log').scrollHeight;
-    $('#gen-synthetic').addEventListener('click', () => generateSynthetic(topics[0]));
-  }
-  async function generateSynthetic(topic) {
-    const btn = $('#gen-synthetic');
-    if (btn) { btn.disabled = true; btn.textContent = 'AI 生成中…'; }
-    const typing = showTyping();
-    let res = await callTrackInfo(topic);
-    typing.remove();
-    if (res && res.quotaExceeded) {
-      appendBotSafe('⚠️ 本月 AI 算力已用完（' + (res.limit / 1000) + 'k token）。升级专业版可解锁更多算力。');
-      renderUpgradeHint();
-      return;
-    }
-    if (res && res.online && res.profile) {
-      renderSyntheticDetail(res.profile);
-    } else if (res && res.online && res.error) {
-      appendBotSafe('生成失败：接口返回异常，请稍后再试。');
-    } else if (res && res.needLogin) {
-      appendBotSafe('💡 请先登录后再使用 AI 顾问生成调研卡。'); openLogin();
-    } else {
-      appendBotSafe('当前 AI 顾问暂未开放，无法生成库外赛道卡。');
-    }
-  }
-  function renderSyntheticDetail(p) {
-    const g = k => (p[k] != null ? p[k] : '');
-    const A = v => (Array.isArray(v) ? v : (v ? [v] : []));
-    const body = `
-      <div class="detail-hero synth">
-        <span class="detail-cat">${esc(g('cat') || '库外赛道')} · AI 生成</span>
-        <h2>${esc(g('name'))}</h2>
-        <div class="rc-tags"><span class="tag tag-ok">${esc(g('friendly'))}</span><span class="tag tag-ai">${esc(g('paybackSpeed'))}</span></div>
-        <div class="detail-stats">
-          <div><b>${fmtMoney(Number(g('capital') || 0))}</b><span>最低启动资金</span></div>
-          <div><b>${Number(g('incomeMin') || 0).toLocaleString()}-${Number(g('incomeMax') || 0).toLocaleString()}</b><span>单人月收益(参考)</span></div>
-          <div><b>${esc(g('firstOrder'))}</b><span>首单周期</span></div>
-        </div>
-      </div>
-      <div class="dcard"><h4>${icon('target')} 商业模式</h4><p>${esc(g('logic'))}</p></div>
-      <div class="dcard"><h4>${icon('rocket')} 落地三件套</h4><ul class="three"><li><b>第一步：</b>${esc(A(g('coldStart'))[0] || '')}</li><li><b>最低配置：</b>${esc(g('config'))}</li><li><b>首单周期：</b>${esc(g('firstOrder'))}</li></ul></div>
-      <div class="detail-grid">
-        <section class="dcard"><h4>${icon('zap')} AI 赋能提效点</h4><p>${esc(g('aiPoint'))}</p></section>
-        <section class="dcard"><h4>${icon('brain')} 核心能力要求</h4><p>${esc(g('ability'))}</p></section>
-        <section class="dcard"><h4>${icon('users')} 适配人群</h4><p>${A(g('target')).map(esc).join('、')}</p></section>
-        <section class="dcard"><h4>${icon('tool')} 所需技能 / 理想资源</h4><p>${A(g('skills')).map(esc).join('、')} ｜ ${A(g('resourcesIdeal')).map(esc).join('、')}</p></section>
-      </div>
-      <section class="dcard"><h4>${icon('alert-triangle')} 风险避坑红线</h4><ul class="donts">${A(g('donts')).map(d => `<li>${esc(d)}</li>`).join('')}</ul></section>
-      <section class="dcard dcard-premium"><h4>${icon('unlock')} 完整落地资料（AI 生成摘要）</h4><p>${esc(g('locked'))}</p></section>
-      <div class="result-btns"><button class="btn btn-ghost" id="synth-back">← 返回对话</button></div>`;
-    $('#detail-body').innerHTML = body;
-    const sb = $('#synth-back'); if (sb) sb.addEventListener('click', () => showView('chat'));
-    showView('detail');
-  }
-  function renderChatKnownChips(ids, topics) {
-    const chips = ids.map(id => { const t = liveTracks().find(x => x.id === id); return t ? `<span class="ochip" data-track="${id}">${esc(t.name)}</span>` : ''; }).filter(Boolean).join('');
-    const card = h(`<div class="chat-actions"><div class="chat-others">AI 推荐：${chips}</div></div>`);
-    $('#chat-log').appendChild(card);
-    $('#chat-log').scrollTop = $('#chat-log').scrollHeight;
-    $$('#chat-log .ochip').forEach(c => c.addEventListener('click', () => openDetail(c.dataset.track, false)));
-    if (topics && topics.length) renderUnknownCard(topics);
-  }
+  /* 本地智能顾问：赛道匹配 + 案例库检索已全部在本地完成，不依赖任何外部 API */
   function mergeChat(p) {
     Object.assign(state.chatAnswers, p);
     if (p.skills) {
@@ -1335,7 +1161,7 @@ ${summary}
     if (p.focus) parts.push({ easy: '求易上手', income: '求高收入', stable: '求稳', grow: '求积累' }[p.focus]);
     return parts.join(' · ');
   }
-  function renderChatResult(results, summary, unknownTopics) {
+  function renderChatResult(results, summary) {
     if (!isUnlocked() && !state.chatHasResult) consumeTestQuota();
     state.chatHasResult = true;
     if (state.user) reportEvent('test', state.user.name);  // 上报测评完成
@@ -1360,7 +1186,6 @@ ${summary}
     $('#chat-toquiz').addEventListener('click', startQuiz);
     bindGuestHint($('#chat-log'));
     $$('#chat-log .ochip').forEach(c => c.addEventListener('click', () => openDetail(c.dataset.track, false)));
-    if (unknownTopics && unknownTopics.length) renderUnknownCard(unknownTopics);
   }
 
   /* 自由文本 → 答案字段解析（关键词匹配，覆盖 12 题维度） */
@@ -2432,78 +2257,11 @@ ${summary}
   /* ====================== 混元设置面板（客户端直连） ====================== */
   async function openHunyuanModal() {
     $('#hunyuan-modal').classList.add('open');
-    const st = $('#hy-status-text'), pl = $('#hy-plan-text'), qu = $('#hy-quota-text'), bar = $('#hy-quota-bar'), note = $('#hy-note');
-    if (st) { st.textContent = '检测中…'; st.style.color = ''; }
-    if (pl) pl.textContent = '—';
-    if (qu) qu.textContent = '—';
-    if (bar) bar.style.width = '0%';
-    try {
-      const r = await apiFetch('/api/status?_=' + Date.now()); const j = await r.json();
-      if (st) { st.textContent = (j && j.online) ? ('✅ 在线（' + (j.model || '混元') + '）') : '❌ 暂未开放'; st.style.color = (j && j.online) ? 'var(--ok, #2ecc71)' : 'var(--danger, #e74c3c)'; }
-    } catch (e) { if (st) { st.textContent = '❌ 无法连接'; st.style.color = 'var(--danger, #e74c3c)'; } }
-    if (state.user) {
-      try {
-        const r2 = await apiFetch('/api/ai/usage?name=' + encodeURIComponent(state.user.name) + '&_=' + Date.now());
-        const u = await r2.json();
-        if (u && u.ok) {
-          if (pl) pl.textContent = ({ free: '免费版', basic: '基础版', pro: '专业版' })[u.plan] || u.plan;
-          if (qu) qu.textContent = (u.used / 1000).toFixed(1) + 'k / ' + (u.limit / 1000) + 'k token';
-          if (bar) { const pct = u.limit ? Math.min(100, Math.round(u.used / u.limit * 100)) : 0; bar.style.width = pct + '%'; bar.style.background = pct > 90 ? 'var(--danger, #e74c3c)' : 'var(--ok, #2ecc71)'; }
-          if (note && u.used >= u.limit) note.textContent = '⚠️ 本月算力已用完，升级专业版或下月自动重置。';
-        }
-      } catch (e) {}
-    } else if (note) { if (pl) pl.textContent = '未登录'; if (qu) qu.textContent = '登录后查看'; note.textContent = '登录后即可查看你的算力额度。'; }
+    const tk = $('#hy-track-count'), ck = $('#hy-case-count');
+    if (tk) { try { tk.textContent = (liveTracks().length || 0) + ' 个'; } catch (e) {} }
+    if (ck) { try { ck.textContent = (liveCases().length || 0) + ' 个'; } catch (e) {} }
   }
   function closeHunyuanModal() { $('#hunyuan-modal').classList.remove('open'); }
-  function saveClientCfg() {
-    const key = $('#hunyuan-key').value.trim();
-    const url = $('#hunyuan-url').value.trim() || 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions';
-    const model = $('#hunyuan-model').value.trim() || 'hunyuan-turbo';
-    if (!key) { toast('请先填写 API Key'); return; }
-    localStorage.setItem('opc_hunyuan_cfg', JSON.stringify({ key, url, model }));
-    closeHunyuanModal();
-    toast('✅ 已保存，对话顾问将直连混元大模型');
-    checkChatStatus();
-  }
-  function clearClientCfg() {
-    localStorage.removeItem('opc_hunyuan_cfg');
-    openHunyuanModal();
-    toast('已清除混元配置，切换回本地引擎');
-    checkChatStatus();
-  }
-  async function testClientCfg() {
-    const key = $('#hunyuan-key').value.trim();
-    const url = $('#hunyuan-url').value.trim() || 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions';
-    const model = $('#hunyuan-model').value.trim() || 'hunyuan-turbo';
-    const fixBox = $('#cors-fix');
-    fixBox.style.display = 'none';
-    if (!key) { $('#hunyuan-test').textContent = '⚠ 请先填写 API Key'; $('#hunyuan-test').className = 'hunyuan-test err'; return; }
-    $('#hunyuan-test').textContent = '测试中…'; $('#hunyuan-test').className = 'hunyuan-test';
-    try {
-      const content = await callHunyuanRaw(
-        [{ role: 'user', content: '回复 JSON {"ok":true}' }], { key, url, model }, 0.3);
-      const p = parseJSONSafe(content);
-      if (p && p.ok) { $('#hunyuan-test').textContent = '✅ 连接成功！混元大模型已就绪'; $('#hunyuan-test').className = 'hunyuan-test ok'; }
-      else { $('#hunyuan-test').textContent = '⚠ 返回异常：' + content.slice(0, 80); $('#hunyuan-test').className = 'hunyuan-test err'; }
-    } catch (e) {
-      const msg = (e && e.message) || '';
-      const isCORS = /Failed to fetch|NetworkError|CORS|cross-origin|blocked/i.test(msg);
-      if (isCORS) {
-        $('#hunyuan-test').textContent = '❌ 浏览器跨域限制（CORS）— 需要本地代理';
-        $('#hunyuan-test').className = 'hunyuan-test err';
-        // 生成含用户 Key 的可复制命令
-        const cmd = 'cd "C:\\Users\\Admin\\WorkBuddy\\2026-07-07-21-54-07\\OPC-SaaS" && set HUNYUAN_API_KEY=' + key + ' && node server.js';
-        $('#cors-cmd').textContent = cmd;
-        fixBox.style.display = '';
-        $('#cors-copy').onclick = () => {
-          navigator.clipboard.writeText(cmd).then(() => { $('#cors-copy').textContent = '✅ 已复制！粘贴到终端回车即可'; });
-        };
-      } else {
-        $('#hunyuan-test').textContent = '❌ 连接失败：' + (msg || '网络异常');
-        $('#hunyuan-test').className = 'hunyuan-test err';
-      }
-    }
-  }
 
   /* ====================== 初始化 ====================== */
   function init() {

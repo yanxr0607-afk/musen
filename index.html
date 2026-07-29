@@ -172,7 +172,7 @@
         <div class="chat-shell">
           <div class="chat-head">
             <div class="chat-ava" data-icon="cpu" data-size="22"></div>
-            <div class="chat-head-row"><b>不做牛马创业选型顾问</b><span id="chat-status" class="chat-status off">检测中…</span><span id="chat-ai-quota" class="chat-ai-quota"></span></div>
+            <div class="chat-head-row"><b>不做牛马创业选型顾问</b><span id="chat-status" class="chat-status on">本地智能顾问 · 在线</span></div>
             <button class="chat-gear" id="chat-gear" title="配置混元大模型" aria-label="配置混元大模型"><span class="ico" data-icon="settings" data-size="18"></span></button>
           </div>
           <div class="chat-log" id="chat-log"></div>
@@ -305,20 +305,18 @@
     </div>
   </div>
 
-  <div class="modal" id="hunyuan-modal" role="dialog" aria-modal="true" aria-label="AI 顾问状态">
+  <div class="modal" id="hunyuan-modal" role="dialog" aria-modal="true" aria-label="创业顾问说明">
     <div class="modal-box">
       <button class="modal-close" id="hunyuan-close" aria-label="关闭"><span class="ico" data-icon="x" data-size="18"></span></button>
-      <h2 class="modal-title">AI 创业顾问 · 后端状态</h2>
+      <h2 class="modal-title">创业选型顾问 · 本地智能引擎</h2>
       <p class="modal-sub">
-        本站的 AI 顾问由服务端统一接入腾讯混元大模型，<b>无需你配置任何 Key</b>。<br>
-        算力按 token 用量计费，每月按会员等级发放额度，超额需升级会员解锁。
+        本顾问完全基于本站已收录的<b>赛道库</b>与<b>实战案例库</b>做匹配与推荐，<b>不依赖任何外部接口或 Key，永远可用</b>。<br>
+        把你的情况（身份、时间、预算、技能、想做的方向）告诉它，即可从现有资料里精准匹配最适合你的轻资产方向，并附上相关真实案例参考。
       </p>
       <div class="form-fields">
-        <div class="kv-row"><span>服务状态</span><b id="hy-status-text">检测中…</b></div>
-        <div class="kv-row"><span>当前会员</span><b id="hy-plan-text">—</b></div>
-        <div class="kv-row"><span>本月算力</span><b id="hy-quota-text">—</b></div>
-        <div class="quota-bar-wrap"><div class="quota-bar" id="hy-quota-bar"></div></div>
-        <p class="hunyuan-note" id="hy-note"></p>
+        <div class="kv-row"><span>赛道库</span><b id="hy-track-count">—</b></div>
+        <div class="kv-row"><span>实战案例库</span><b id="hy-case-count">—</b></div>
+        <p class="hunyuan-note">提示：想看更完整的赛道 SOP 与全部案例，可开通会员解锁「进阶测评 + 案例库 + 落地工具箱」。</p>
       </div>
       <div class="modal-actions">
         <button class="btn btn-primary" id="hunyuan-ok">知道了</button>
@@ -437,8 +435,8 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="assets/data.js?v=4"></script>
-  <script src="assets/assess-data.js?v=4"></script>
-  <script src="assets/app.js?v=4"></script>
+  <script src="assets/data.js?v=5"></script>
+  <script src="assets/assess-data.js?v=5"></script>
+  <script src="assets/app.js?v=5"></script>
 </body>
 </html>

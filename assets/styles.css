@@ -430,6 +430,14 @@ button { font-family: inherit; cursor: pointer; }
 .chat-status.client { color: var(--accent); background: rgba(34,211,238,.14); }
 .chat-ai-quota { margin-left: 8px; font-size: 11.5px; color: var(--muted); }
 .chat-head-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+/* 顾问内联「相关实战案例」卡片 */
+.lc-head { font-size: 12.5px; color: var(--primary-d); font-weight: 600; margin: 2px 0 8px; display: flex; align-items: center; gap: 6px; }
+.lc-card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; transition: .2s; }
+.lc-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: var(--shadow); }
+.lc-cat { font-size: 11.5px; color: var(--muted); margin-bottom: 4px; }
+.lc-title { font-size: 14px; font-weight: 600; color: var(--ink); line-height: 1.45; }
+.lc-insight { font-size: 12.5px; color: var(--muted); line-height: 1.5; margin-top: 6px; }
+.lc-more { font-size: 12px; color: var(--primary-d); font-weight: 600; margin-top: 8px; }
 .kv-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
 .kv-row span { color: var(--muted); }
 .kv-row b { color: var(--text); }
