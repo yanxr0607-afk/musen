@@ -172,7 +172,7 @@
         <div class="chat-shell">
           <div class="chat-head">
             <div class="chat-ava" data-icon="cpu" data-size="22"></div>
-            <div><b>不做牛马创业选型顾问</b><span id="chat-status" class="chat-status off">检测中…</span></div>
+            <div class="chat-head-row"><b>不做牛马创业选型顾问</b><span id="chat-status" class="chat-status off">检测中…</span><span id="chat-ai-quota" class="chat-ai-quota"></span></div>
             <button class="chat-gear" id="chat-gear" title="配置混元大模型" aria-label="配置混元大模型"><span class="ico" data-icon="settings" data-size="18"></span></button>
           </div>
           <div class="chat-log" id="chat-log"></div>
@@ -305,38 +305,24 @@
     </div>
   </div>
 
-  <div class="modal" id="hunyuan-modal" role="dialog" aria-modal="true" aria-label="配置混元大模型">
+  <div class="modal" id="hunyuan-modal" role="dialog" aria-modal="true" aria-label="AI 顾问状态">
     <div class="modal-box">
       <button class="modal-close" id="hunyuan-close" aria-label="关闭"><span class="ico" data-icon="x" data-size="18"></span></button>
-      <h2 class="modal-title">配置混元大模型（Hunyuan）</h2>
+      <h2 class="modal-title">AI 创业顾问 · 后端状态</h2>
       <p class="modal-sub">
-        静态部署（分享链接）无法运行后端，<b>填入你自己的 API Key 即可让对话顾问直连混元</b>，并自动回答库外赛道。<br>
-        Key 仅保存在你本地浏览器，不会上传到任何服务器。
+        本站的 AI 顾问由服务端统一接入腾讯混元大模型，<b>无需你配置任何 Key</b>。<br>
+        算力按 token 用量计费，每月按会员等级发放额度，超额需升级会员解锁。
       </p>
       <div class="form-fields">
-        <label>API Key（Bearer）
-          <input type="password" id="hunyuan-key" placeholder="sk-... 或你的混元密钥" autocomplete="off" />
-        </label>
-        <label>接口地址（OpenAI 兼容）
-          <input type="text" id="hunyuan-url" placeholder="https://api.hunyuan.cloud.tencent.com/v1/chat/completions" />
-        </label>
-        <label>模型名称
-          <input type="text" id="hunyuan-model" placeholder="hunyuan-turbo" />
-        </label>
-      </div>
-      <p class="hunyuan-test" id="hunyuan-test"></p>
-      <div class="cors-fix" id="cors-fix" style="display:none">
-        <p><span class="ico" data-icon="tool" data-size="15"></span> <b>浏览器跨域限制（CORS）</b> — 静态网页无法直接调用腾讯云 API。</p>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:6px">在项目目录打开终端，运行以下命令即可绕过限制（Key 已自动填入）：</p>
-        <pre id="cors-cmd" class="cors-cmd"></pre>
-        <button class="btn btn-primary btn-sm" id="cors-copy"><span class="ico" data-icon="copy" data-size="15"></span> 复制命令</button>
+        <div class="kv-row"><span>服务状态</span><b id="hy-status-text">检测中…</b></div>
+        <div class="kv-row"><span>当前会员</span><b id="hy-plan-text">—</b></div>
+        <div class="kv-row"><span>本月算力</span><b id="hy-quota-text">—</b></div>
+        <div class="quota-bar-wrap"><div class="quota-bar" id="hy-quota-bar"></div></div>
+        <p class="hunyuan-note" id="hy-note"></p>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" id="hunyuan-clear">清除配置</button>
-        <button class="btn btn-ghost" id="hunyuan-testbtn">测试连接</button>
-        <button class="btn btn-primary" id="hunyuan-save">保存并启用</button>
+        <button class="btn btn-primary" id="hunyuan-ok">知道了</button>
       </div>
-      <p class="hunyuan-note">提示：若浏览器提示跨域（CORS）错误，说明该接口暂不允许网页直接调用，可在本地用 <code>node server.js</code> 配合服务端 Key 运行。</p>
     </div>
   </div>
 

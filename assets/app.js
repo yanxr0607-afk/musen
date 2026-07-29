@@ -1066,21 +1066,32 @@
       return j || {};
     } catch (e) { return { online: false }; }
   }
-  async function callChatAPI(text) { return apiPost('/api/chat', { message: text }); }
-  async function callTrackInfo(topic) { return apiPost('/api/track-info', { topic }); }
+  function currentName() { return (state.user && state.user.name) ? state.user.name : ''; }
+  async function callChatAPI(text) { return apiPost('/api/chat', { message: text, name: currentName() }); }
+  async function callTrackInfo(topic) { return apiPost('/api/track-info', { topic, name: currentName() }); }
 
+  async function refreshChatQuota() {
+    const el = $('#chat-ai-quota'); if (!el || !state.user) return;
+    try {
+      const r = await apiFetch('/api/ai/usage?name=' + encodeURIComponent(state.user.name));
+      const j = await r.json();
+      if (j && j.ok && j.limit) {
+        const pct = Math.min(100, Math.round(j.used / j.limit * 100));
+        el.textContent = '本月算力 ' + (j.used / 1000).toFixed(1) + 'k / ' + (j.limit / 1000) + 'k';
+        el.title = '本月已用 ' + pct + '%';
+      }
+    } catch (e) {}
+  }
   async function checkChatStatus() {
     let proxyOnline = false;
     try { const r = await apiFetch('/api/status'); const j = await r.json(); proxyOnline = !!(j && j.online); } catch (e) { proxyOnline = false; }
-    if (proxyOnline) updateChatStatus('proxy');
-    else if (hasClientKey()) updateChatStatus('client');
-    else updateChatStatus('off');
+    updateChatStatus(proxyOnline ? 'proxy' : 'off');
+    if (state.user && proxyOnline) refreshChatQuota();
   }
   function updateChatStatus(mode) {
     const el = $('#chat-status'); if (!el) return;
-    if (mode === 'proxy') { el.textContent = '混元大模型 · 在线'; el.className = 'chat-status on'; }
-    else if (mode === 'client') { el.textContent = '混元 · 直连模式'; el.className = 'chat-status client'; }
-    else { el.textContent = '本地引擎 · 离线'; el.className = 'chat-status off'; }
+    if (mode === 'proxy') { el.textContent = 'AI 顾问 · 在线'; el.className = 'chat-status on'; }
+    else { el.textContent = 'AI 顾问 · 离线'; el.className = 'chat-status off'; }
   }
 
   /* ====================== 客户端直连混元（用于静态部署 / 分享链接） ====================== */
@@ -1162,10 +1173,16 @@ ${summary}
     return { online: true, profile: parsed };
   }
 
+  function renderUpgradeHint() {
+    const bar = h('<div class="chat-actions"><button class="btn btn-primary" id="chat-upgrade">升级专业版解锁算力 →</button></div>');
+    $('#chat-log').appendChild(bar);
+    const b = $('#chat-upgrade'); if (b) b.addEventListener('click', () => pickPlan('pro'));
+  }
   function sendChat() {
     const ta = $('#chat-input'); const text = ta.value.trim();
     if (!text) return;
     if (!canTest() && !state.chatHasResult) { showTestLimit(); return; }
+    if (!state.user) { appendBotSafe('💡 登录后即可使用 AI 创业顾问为你精准匹配赛道。'); openLogin(); return; }
     appendUser(text); ta.value = ''; autoGrow(ta);
     const typing = showTyping();
     const parsed = parseFreeText(text);
@@ -1173,30 +1190,27 @@ ${summary}
     const summary = summarize(parsed);
     callChatAPI(text).then(res => {
       typing.remove();
+      if (res && res.quotaExceeded) {
+        updateChatStatus('proxy');
+        appendBotSafe('⚠️ 本月 AI 算力已用完（' + (res.limit / 1000) + 'k token）。升级专业版可解锁更多算力，或下月自动重置。');
+        renderUpgradeHint();
+        refreshChatQuota();
+        return;
+      }
       const online = res && res.online && !res.error;
       if (online) {
         updateChatStatus('proxy');
+        if (res.aiUsed != null) refreshChatQuota();
         renderApiResult(res, parsed, summary);
-      } else if (hasClientKey()) {
-        callHunyuanDirectChat(text).then(dr => {
-          updateChatStatus('client');
-          renderApiResult(dr, parsed, summary);
-        }).catch(err => {
-          updateChatStatus('off');
-          appendBotSafe('（直连混元失败：' + (err && err.message ? err.message : '网络/跨域受限') + '，已切换本地引擎。如需稳定使用，可本地运行 node server.js）');
-          fallbackChat(summary);
-        });
       } else {
         updateChatStatus('off');
-        fallbackChat(summary);
-        if (res && res.online && res.error) appendBotSafe('（AI 接口暂时异常，已切换到本地引擎）');
+        if (res && res.needLogin) { appendBotSafe('💡 请先登录后再使用 AI 顾问。'); openLogin(); }
+        else { appendBotSafe('（AI 顾问暂未开放，请稍后再试）'); }
       }
     }).catch(() => {
       typing.remove();
-      if (hasClientKey()) {
-        callHunyuanDirectChat(text).then(dr => { updateChatStatus('client'); renderApiResult(dr, parsed, summary); })
-          .catch(err => { updateChatStatus('off'); fallbackChat(summary); });
-      } else { updateChatStatus('off'); fallbackChat(summary); }
+      updateChatStatus('off');
+      appendBotSafe('（网络异常，AI 顾问暂时不可用）');
     });
   }
 
@@ -1244,16 +1258,20 @@ ${summary}
     if (btn) { btn.disabled = true; btn.textContent = 'AI 生成中…'; }
     const typing = showTyping();
     let res = await callTrackInfo(topic);
-    if ((!res || !res.online) && hasClientKey()) {
-      try { res = await callHunyuanDirectTrackInfo(topic); } catch (e) { res = { online: false }; }
-    }
     typing.remove();
+    if (res && res.quotaExceeded) {
+      appendBotSafe('⚠️ 本月 AI 算力已用完（' + (res.limit / 1000) + 'k token）。升级专业版可解锁更多算力。');
+      renderUpgradeHint();
+      return;
+    }
     if (res && res.online && res.profile) {
       renderSyntheticDetail(res.profile);
     } else if (res && res.online && res.error) {
       appendBotSafe('生成失败：接口返回异常，请稍后再试。');
+    } else if (res && res.needLogin) {
+      appendBotSafe('💡 请先登录后再使用 AI 顾问生成调研卡。'); openLogin();
     } else {
-      appendBotSafe('当前为「本地引擎」模式，无法生成库外赛道卡。可在设置中填入你自己的混元 Key 直连，或在服务端配置 API Key 后使用。');
+      appendBotSafe('当前 AI 顾问暂未开放，无法生成库外赛道卡。');
     }
   }
   function renderSyntheticDetail(p) {
@@ -2412,13 +2430,29 @@ ${summary}
   function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3200); }
 
   /* ====================== 混元设置面板（客户端直连） ====================== */
-  function openHunyuanModal() {
-    const c = loadClientCfg() || {};
-    $('#hunyuan-key').value = c.key || '';
-    $('#hunyuan-url').value = c.url || 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions';
-    $('#hunyuan-model').value = c.model || 'hunyuan-turbo';
-    $('#hunyuan-test').textContent = '';
+  async function openHunyuanModal() {
     $('#hunyuan-modal').classList.add('open');
+    const st = $('#hy-status-text'), pl = $('#hy-plan-text'), qu = $('#hy-quota-text'), bar = $('#hy-quota-bar'), note = $('#hy-note');
+    if (st) { st.textContent = '检测中…'; st.style.color = ''; }
+    if (pl) pl.textContent = '—';
+    if (qu) qu.textContent = '—';
+    if (bar) bar.style.width = '0%';
+    try {
+      const r = await apiFetch('/api/status'); const j = await r.json();
+      if (st) { st.textContent = (j && j.online) ? ('✅ 在线（' + (j.model || '混元') + '）') : '❌ 暂未开放'; st.style.color = (j && j.online) ? 'var(--ok, #2ecc71)' : 'var(--danger, #e74c3c)'; }
+    } catch (e) { if (st) { st.textContent = '❌ 无法连接'; st.style.color = 'var(--danger, #e74c3c)'; } }
+    if (state.user) {
+      try {
+        const r2 = await apiFetch('/api/ai/usage?name=' + encodeURIComponent(state.user.name));
+        const u = await r2.json();
+        if (u && u.ok) {
+          if (pl) pl.textContent = ({ free: '免费版', basic: '基础版', pro: '专业版' })[u.plan] || u.plan;
+          if (qu) qu.textContent = (u.used / 1000).toFixed(1) + 'k / ' + (u.limit / 1000) + 'k token';
+          if (bar) { const pct = u.limit ? Math.min(100, Math.round(u.used / u.limit * 100)) : 0; bar.style.width = pct + '%'; bar.style.background = pct > 90 ? 'var(--danger, #e74c3c)' : 'var(--ok, #2ecc71)'; }
+          if (note && u.used >= u.limit) note.textContent = '⚠️ 本月算力已用完，升级专业版或下月自动重置。';
+        }
+      } catch (e) {}
+    } else if (note) { if (pl) pl.textContent = '未登录'; if (qu) qu.textContent = '登录后查看'; note.textContent = '登录后即可查看你的算力额度。'; }
   }
   function closeHunyuanModal() { $('#hunyuan-modal').classList.remove('open'); }
   function saveClientCfg() {
@@ -2551,10 +2585,8 @@ ${summary}
     $('#chat-back').addEventListener('click', goHome);
     $('#chat-gear').addEventListener('click', openHunyuanModal);
     $('#hunyuan-close').addEventListener('click', closeHunyuanModal);
+    $('#hunyuan-ok').addEventListener('click', closeHunyuanModal);
     $('#hunyuan-modal').addEventListener('click', e => { if (e.target.id === 'hunyuan-modal') closeHunyuanModal(); });
-    $('#hunyuan-save').addEventListener('click', saveClientCfg);
-    $('#hunyuan-clear').addEventListener('click', clearClientCfg);
-    $('#hunyuan-testbtn').addEventListener('click', testClientCfg);
     $('#daily-back').addEventListener('click', goHome);
     $('#home-daily').addEventListener('click', openDaily);
     $('#cases-home').addEventListener('click', goHome);

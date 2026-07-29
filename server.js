@@ -39,8 +39,8 @@ loadEnv();
 const HUNYUAN_KEY = process.env.HUNYUAN_API_KEY || '';
 // 默认值采用已验证可用的腾讯云 TokenHub 体系（hy3），本机零配置 node server.js 即可直接接通混元。
 // Railway 等已通过环境变量 HUNYUAN_URL / HUNYUAN_MODEL / HUNYUAN_API_KEY 覆盖，不受此默认值影响。
-const HUNYUAN_MODEL = process.env.HUNYUAN_MODEL || 'hy3';
-const HUNYUAN_URL = process.env.HUNYUAN_URL || 'https://tokenhub-intl.tencentmaas.com/v1/chat/completions';
+const HUNYUAN_MODEL = process.env.HUNYUAN_MODEL || 'hunyuan-turbo';
+const HUNYUAN_URL = process.env.HUNYUAN_URL || 'https://api.hunyuan.cloud.tencent.com/v1/chat/completions';
 const FORCE_JSON = process.env.HUNYUAN_JSON !== '0'; // 默认要求 JSON 输出
 const ONLINE = !!HUNYUAN_KEY;
 
@@ -111,7 +111,14 @@ async function callHunyuan(messages, opts = {}) {
       throw new Error('Hunyuan HTTP ' + res.status + ': ' + txt.slice(0, 300));
     }
     const data = await res.json();
-    return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+    const content = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+    // 用量（算力）：优先用接口返回的 total_tokens；缺失时按字符数估算（中文约 2 字符/token）
+    let usage = (data.usage && typeof data.usage.total_tokens === 'number') ? data.usage.total_tokens : null;
+    if (usage == null) {
+      const approx = (JSON.stringify(body).length + (content ? content.length : 0));
+      usage = Math.max(1, Math.ceil(approx / 2));
+    }
+    return { content, usage };
   } finally {
     clearTimeout(timer);
   }
@@ -145,40 +152,100 @@ function readBody(req) {
 }
 
 /* ---------------- 接口实现 ---------------- */
+
+/* AI 算力：按 token 计、按月配额（"限时收费"= 自然月重置额度） */
+const AI_QUOTA = { free: 50000, basic: 300000, pro: 1000000 }; // 每月 token 上限
+function aiQuotaFor(plan) { return AI_QUOTA[plan] || 0; }
+function aiMonthKey() { return new Date().toISOString().slice(0, 7); } // YYYY-MM
+function ensureAiReset(u) {
+  const m = aiMonthKey();
+  if (u.aiResetMonth !== m) { u.aiTokens = 0; u.aiResetMonth = m; }
+  if (typeof u.aiTokens !== 'number') u.aiTokens = 0;
+}
+/* 返回某用户当月算力用量；跨月自动清零（并落盘） */
+function getAiUsage(name) {
+  const s = loadStore();
+  const u = s.users.find(x => x.name === name);
+  if (!u) return { ok: false };
+  const before = u.aiResetMonth;
+  ensureAiReset(u);
+  if (before !== u.aiResetMonth) saveStore(s); // 跨月清零需持久化
+  const plan = u.membership || 'free';
+  return { ok: true, plan, used: u.aiTokens || 0, limit: aiQuotaFor(plan) };
+}
+/* 扣减算力，超额返回 false（不扣减） */
+function consumeAiQuota(u, tokens) {
+  ensureAiReset(u);
+  const limit = aiQuotaFor(u.membership || 'free');
+  if ((u.aiTokens || 0) + tokens > limit) return false;
+  u.aiTokens = (u.aiTokens || 0) + tokens;
+  return true;
+}
+
 async function handleChat(req, res) {
   if (!ONLINE) return sendJSON(res, 200, { online: false });
   const body = await readBody(req);
   const message = String(body.message || '').slice(0, 2000);
+  const name = String(body.name || '').slice(0, 32);
   if (!message.trim()) return sendJSON(res, 400, { error: 'empty message' });
-
+  const s = loadStore();
+  const u = name ? s.users.find(x => x.name === name) : null;
+  if (!u) return sendJSON(res, 200, { needLogin: true });
+  ensureAiReset(u);
+  const limit = aiQuotaFor(u.membership || 'free');
+  if ((u.aiTokens || 0) >= limit) {
+    return sendJSON(res, 200, { quotaExceeded: true, plan: u.membership || 'free', used: u.aiTokens, limit });
+  }
   const messages = [
     { role: 'system', content: systemPrompt() },
     { role: 'user', content: message },
   ];
   try {
-    const text = await callHunyuan(messages);
+    const { content: text, usage } = await callHunyuan(messages);
+    const tokens = typeof usage === 'number' ? usage
+      : Math.max(1, Math.ceil((systemPrompt().length + message.length + (text ? text.length : 0)) / 2));
+    if (!consumeAiQuota(u, tokens)) {
+      return sendJSON(res, 200, { quotaExceeded: true, plan: u.membership || 'free', used: u.aiTokens, limit });
+    }
+    saveStore(s);
     const parsed = parseJSONSafe(text);
+    const tail = { aiUsed: u.aiTokens, aiLimit: limit };
     if (!parsed) {
-      return sendJSON(res, 200, { online: true, parseError: true, reply: text.slice(0, 600) });
+      return sendJSON(res, 200, Object.assign({ online: true, parseError: true, reply: text.slice(0, 600) }, tail));
     }
     const known = (Array.isArray(parsed.knownTracks) ? parsed.knownTracks : [])
       .filter(id => TRACKS.find(t => t.id === id)).slice(0, 3);
-    return sendJSON(res, 200, {
+    return sendJSON(res, 200, Object.assign({
       online: true,
       reply: String(parsed.reply || ''),
       knownTracks: known,
       unknownTopics: Array.isArray(parsed.unknownTopics) ? parsed.unknownTopics : [],
-    });
+    }, tail));
   } catch (e) {
     return sendJSON(res, 200, { online: true, error: true, message: e.message });
   }
+}
+
+async function handleAiUsage(req, res) {
+  const name = String((req.url.match(/[?&]name=([^&]*)/) || [])[1] || '').trim().slice(0, 32);
+  if (!name) return sendJSON(res, 200, { ok: false });
+  return sendJSON(res, 200, Object.assign({ ok: true }, getAiUsage(name)));
 }
 
 async function handleTrackInfo(req, res) {
   if (!ONLINE) return sendJSON(res, 200, { online: false });
   const body = await readBody(req);
   const topic = String(body.topic || '').slice(0, 200);
+  const name = String(body.name || '').slice(0, 32);
   if (!topic.trim()) return sendJSON(res, 400, { error: 'empty topic' });
+  const s = loadStore();
+  const u = name ? s.users.find(x => x.name === name) : null;
+  if (!u) return sendJSON(res, 200, { needLogin: true });
+  ensureAiReset(u);
+  const limit = aiQuotaFor(u.membership || 'free');
+  if ((u.aiTokens || 0) >= limit) {
+    return sendJSON(res, 200, { quotaExceeded: true, plan: u.membership || 'free', used: u.aiTokens, limit });
+  }
 
   const prompt = `请围绕主题"${topic}"生成一份结构化一人公司赛道调研卡。严格只输出 JSON：
 {
@@ -212,12 +279,19 @@ async function handleTrackInfo(req, res) {
     { role: 'user', content: prompt },
   ];
   try {
-    const text = await callHunyuan(messages, { temperature: 0.8 });
-    const parsed = parseJSONSafe(text);
-    if (!parsed || !parsed.name) {
-      return sendJSON(res, 200, { online: true, parseError: true, raw: text.slice(0, 800) });
+    const { content: text, usage } = await callHunyuan(messages, { temperature: 0.8 });
+    const tokens = typeof usage === 'number' ? usage
+      : Math.max(1, Math.ceil((text ? text.length : 0) / 2 + 700));
+    if (!consumeAiQuota(u, tokens)) {
+      return sendJSON(res, 200, { quotaExceeded: true, plan: u.membership || 'free', used: u.aiTokens, limit });
     }
-    return sendJSON(res, 200, { online: true, profile: parsed });
+    saveStore(s);
+    const parsed = parseJSONSafe(text);
+    const tail = { aiUsed: u.aiTokens, aiLimit: limit };
+    if (!parsed || !parsed.name) {
+      return sendJSON(res, 200, Object.assign({ online: true, parseError: true, raw: text.slice(0, 800) }, tail));
+    }
+    return sendJSON(res, 200, Object.assign({ online: true, profile: parsed }, tail));
   } catch (e) {
     return sendJSON(res, 200, { online: true, error: true, message: e.message });
   }
@@ -835,6 +909,7 @@ const server = http.createServer(async (req, res) => {
     if (u === '/api/status') return sendJSON(res, 200, { online: ONLINE, model: HUNYUAN_MODEL });
     if (u === '/api/chat' && req.method === 'POST') return await handleChat(req, res);
     if (u === '/api/track-info' && req.method === 'POST') return await handleTrackInfo(req, res);
+    if (u === '/api/ai/usage' && req.method === 'GET') return await handleAiUsage(req, res);
     if (u === '/api/daily' && req.method === 'POST') return await handleDaily(req, res);
     if (u === '/api/view' && req.method === 'POST') return await handleView(req, res);
     if (u === '/api/views' && req.method === 'GET') return await handleViews(req, res);
@@ -848,7 +923,8 @@ function handleUserProfile(req, res) {
   if (!u) return sendJSON(res, 200, { ok: true, membership: null });     // 未注册
   // 进阶解锁随 基础版/专业版 自动生效，免费用户一律视为未解锁（以会员等级为准，自动修复历史污染数据）
   const effectiveAdv = (u.membership === 'basic' || u.membership === 'pro');
-  return sendJSON(res, 200, { ok: true, membership: u.membership || 'free', name: u.name, advancedUnlocked: effectiveAdv });
+  const ai = getAiUsage(name);
+  return sendJSON(res, 200, { ok: true, membership: u.membership || 'free', name: u.name, advancedUnlocked: effectiveAdv, aiUsed: ai.ok ? ai.used : 0, aiLimit: ai.ok ? ai.limit : 0 });
 }
 
     /* 公开内容 / 上报 */
