@@ -520,16 +520,9 @@ const PLANS = [
     cta: '免费开始'
   },
   {
-    id: 'advanced', name: '进阶测评解锁', price: '¥9.9', period: ' 一次性',
-    highlight: false, target: '单次解锁 20 题精准测评，不占用每日免费次数',
-    benefits: ['20 题精准测评', '1-2 个细分赛道 + 匹配度', '4 步落地 SOP + 案例 + 工具包'],
-    cta: '解锁进阶测评',
-    advOnly: true
-  },
-  {
     id: 'basic', name: '基础版', price: '9.9 元', period: '/ 月',
-    highlight: false, target: '新手试水用户，走量为主',
-    benefits: ['无限次匹配测试', '全部赛道详情', '基础案例库', '合规模板包'],
+    highlight: false, target: '新手试水 + 进阶精准测评一步到位',
+    benefits: ['无限次匹配测试', '全部赛道详情', '基础案例库', '合规模板包', '20 题精准测评 + 1-2 细分赛道', '4 步落地 SOP + 案例 + 工具包'],
     cta: '开通基础版'
   },
   {
@@ -537,12 +530,6 @@ const PLANS = [
     highlight: true, target: '核心付费层，主要收入来源',
     benefits: ['基础版全部权益', '落地测算工具箱', '一人公司经营助手', 'AI 启动方案生成', '月度赛道更新'],
     cta: '开通专业版'
-  },
-  {
-    id: 'vip', name: '高端版', price: '99.9 元', period: '/ 月',
-    highlight: false, target: '高价值用户，提升 ARPU',
-    benefits: ['专业版全部权益', '1v1 赛道诊断 1 次', '资源对接社群', '专属资料包'],
-    cta: '开通高端版'
   },
 ];
 

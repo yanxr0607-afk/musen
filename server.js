@@ -661,8 +661,8 @@ async function handlePay(req, res) {
   o.status = 'paid'; o.paidAt = Date.now();
   const u = s.users.find(x => x.name === o.user);
   if (u) {
-    if (o.plan === 'advanced') u.advancedUnlocked = true;   // 进阶测为单次解锁，不写入会员等级
-    else u.membership = o.plan;
+    u.membership = o.plan;
+    if (o.plan === 'basic' || o.plan === 'pro') u.advancedUnlocked = true; // 基础版/专业版含进阶测评
     u.lastActive = Date.now();
   }
   saveStore();
@@ -702,7 +702,7 @@ async function handleAdminSetMembership(req, res) {
   const s = loadStore();
   const u = s.users.find(x => x.name === name);
   if (!u) return sendJSON(res, 404, { error: 'no user' });
-  if (membership === 'advanced') u.advancedUnlocked = true;   // 进阶测单次解锁
+  if (membership === 'basic' || membership === 'pro') u.advancedUnlocked = true; // 基础版/专业版含进阶测评
   else u.membership = membership;
   u.lastActive = Date.now();
   saveStore();
@@ -719,7 +719,7 @@ async function handleAdminOrderStatus(req, res) {
   if (!o) return sendJSON(res, 404, { error: 'no order' });
   o.status = status;
   if ((status === 'paid' || status === 'done') && !o.paidAt) o.paidAt = Date.now();
-  if ((status === 'paid' || status === 'done') && o.plan === 'advanced') {
+  if ((status === 'paid' || status === 'done') && (o.plan === 'basic' || o.plan === 'pro')) {
     const u = s.users.find(x => x.name === o.user);
     if (u) u.advancedUnlocked = true;
   }

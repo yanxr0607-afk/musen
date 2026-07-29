@@ -7,7 +7,7 @@
   'use strict';
 
   const STEPS = ['首页', '智能测评', '匹配结果', '赛道详情', '开通会员', '落地工具'];
-  const UNLOCKED = ['basic', 'pro', 'vip'];
+  const UNLOCKED = ['basic', 'pro'];
 
   /* 运营配置（OPS）：后台可配的 banner 轮播 / 弹窗 / AI 话术，前端实时展示 */
   const OPS_DEFAULT = {
@@ -85,7 +85,7 @@
   /* 安全网：有账号但 membership 异常时，回退到 free */
   function ensureValidMembership() {
     if (!state.user) return;                       // 没注册，不处理
-    const valid = PLANS.map(p => p.id);            // ['free','basic','pro','vip']
+    const valid = PLANS.map(p => p.id);            // ['free','basic','pro']
     if (!valid.includes(state.membership)) {
       state.membership = 'free';
       localStorage.setItem('opc_membership', 'free');
@@ -1640,7 +1640,7 @@ ${summary}
             <span class="btn btn-primary lc-btn">开始初测 →</span>
           </div>
           <div class="lc-card lc-advanced ${advancedOk ? '' : 'lc-locked'}" id="lc-advanced" role="button" tabindex="0">
-            <span class="lc-badge ${advancedOk ? 'lc-ok' : 'lc-pay'}">${advancedOk ? '已解锁' : '¥9.9 / 会员'}</span>
+            <span class="lc-badge ${advancedOk ? 'lc-ok' : 'lc-pay'}">${advancedOk ? '已解锁' : '会员解锁'}</span>
             <div class="lc-ico">${icon('sparkle', 30)}</div>
             <h3>进阶测（20 题）</h3>
             <p class="lc-tag">1-2 个精准细分赛道 + SOP + 案例 + 工具包</p>
@@ -1659,8 +1659,9 @@ ${summary}
     const ca = $('#lc-advanced'); if (ca) { ca.addEventListener('click', goAdvanced); ca.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goAdvanced(); } }); }
   }
   function openAdvancedGate() {
-    if (!requireRegister(() => pickPlan('advanced'))) return;
-    pickPlan('advanced');
+    // 进阶测评已并入基础版，引导用户开通会员（基础版/专业版均含进阶测评）
+    if (!requireRegister(() => openMembership())) return;
+    openMembership();
   }
   function startInitial() {
     if (!enterTestGuard()) return;
@@ -2090,12 +2091,6 @@ ${summary}
   function closeMembership() { $('#member-modal').classList.remove('open'); setModuleActive(getCurrentView()); }
   function pickPlan(plan) {
     if (plan === 'free') { closeMembership(); return; }
-    if (plan === 'advanced') {
-      // 进阶测评：单次付费解锁，不走会员包月流程
-      if (!requireRegister(() => openPay('advanced'))) return;
-      openPay('advanced');
-      return;
-    }
     if (!requireRegister(() => pickPlan(plan))) return;
     openPay(plan);   // 点击会员 → 跳转支付页（展示收款码）
   }
@@ -2157,9 +2152,7 @@ ${summary}
       if (succ) { succ.innerHTML = succHTML(true); succ.style.display = ''; }
       // 不再本地直接解锁：解锁以「后端核实付款」为准，前端通过 syncMembership 轮询生效
       syncMembership();
-      toast(plan === 'advanced'
-        ? '🎯 进阶测评开通申请已提交，客服核实付款后自动解锁'
-        : '申请已提交，请按提示联系客服开通 🎁');
+      toast('申请已提交，请按提示联系客服开通 🎁');
     } catch (e) {
       const body = $('#pay-body'), succ = $('#pay-success');
       if (body) body.style.display = 'none';

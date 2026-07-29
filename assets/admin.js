@@ -3,7 +3,7 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const TOKEN_KEY = 'opc_admin_token';
-  const TIERS = [['free', '免费版'], ['basic', '基础版'], ['pro', '专业版'], ['vip', '高端版']];
+  const TIERS = [['free', '免费版'], ['basic', '基础版'], ['pro', '专业版']];
   let PAY_DRAFT = { wechatQR: '', alipayQR: '' };
 
   /* 后端基地址：默认同源（admin.html 由 server.js 托管时无需配置）。
